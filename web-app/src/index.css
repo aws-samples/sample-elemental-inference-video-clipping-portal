@@ -1,0 +1,217 @@
+/* Inference Highlight Maker - Custom Styles */
+
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  /* Use light theme by default to match the Amplify login page with AWS Cloudscape*/
+  color-scheme: light;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* === Primary brand colors (Cloudscape blue palette) === */
+  --amplify-colors-brand-primary-10: #f0f6ff;
+  --amplify-colors-brand-primary-20: #d6e8ff;
+  --amplify-colors-brand-primary-40: #89bdff;
+  --amplify-colors-brand-primary-60: #539fe5;
+  --amplify-colors-brand-primary-80: #0972d3;
+  --amplify-colors-brand-primary-90: #065299;
+  --amplify-colors-brand-primary-100: #033160;
+
+  /* === Background colors === */
+  --amplify-colors-background-primary: #ffffff;
+  --amplify-colors-background-secondary: #fafafa;
+
+  /* === Font / text === */
+  --amplify-colors-font-primary: #eee;
+  --amplify-colors-font-secondary: #fff;
+  --amplify-colors-font-interactive: #eee;
+
+  /* === Border === */
+  --amplify-colors-border-primary: #b6bec9;
+  --amplify-colors-border-focus: #0972d3;
+
+  /* === Typography === */
+  --amplify-fonts-default-variable: 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+  --amplify-font-sizes-small: 0.875rem;
+  --amplify-font-sizes-medium: 1rem;
+  --amplify-font-sizes-large: 1.25rem;
+
+  /* === Spacing === */
+  --amplify-space-small: 0.5rem;
+  --amplify-space-medium: 1rem;
+  --amplify-space-large: 1.5rem;
+  --amplify-space-xl: 2rem;
+
+  /* === Border radius === */
+  --amplify-radii-small: 8px;
+  --amplify-radii-medium: 12px;
+
+  /* === Authenticator container === */
+  --amplify-components-authenticator-router-border-width: 1px 0 1px 0;
+  --amplify-components-authenticator-router-border-color: #e9ebed;
+  --amplify-components-authenticator-router-background-color: #131920;
+  --amplify-components-authenticator-router-box-shadow: 0 1px 4px rgba(0, 7, 22, 0.12);
+
+  /* === Tabs === */
+  --amplify-components-tabs-item-color: #5f6b7a;
+  --amplify-components-tabs-item-active-color: #0972d3;
+  --amplify-components-tabs-item-active-border-color: #0972d3;
+
+  /* === Buttons === */
+  --amplify-components-button-primary-background-color: #0972d3;
+  --amplify-components-button-primary-color: #ffffff;
+  --amplify-components-button-primary-hover-background-color: #065299;
+  --amplify-components-button-link-color: #0972d3;
+
+  /* === Input fields === */
+  --amplify-components-fieldcontrol-border-color: #b6bec9;
+  --amplify-components-fieldcontrol-focus-border-color: #0972d3;
+}
+
+/* Reset body styles for AWS Cloudscape layout */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #fafafa;
+}
+
+/* Ensure full height for React root */
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout main > div:first-child > div {
+  background: #0f141a !important;
+}
+
+.breadcrumb-container {
+  color: #fff;
+  background: #0f141a !important;
+}
+
+/* Top navigation styling */
+#top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+#footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  padding: 16px;
+  background: #0f1b2a;
+  color: #d1d5db;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+  z-index: 1000;
+}
+
+#footer .flex {
+  display: flex;
+  flex: 1;
+}
+
+#footer .flex-row {
+  flex-direction: row;
+}
+
+#footer .flex-column {
+  flex-direction: column;
+}
+
+#footer img{
+  filter: grayscale(1);
+  margin-right: 16px;
+}
+#footer a {
+  text-decoration: none;
+  color: #d1d5db;
+}
+#footer .copyright {
+  text-align: right;
+  /* max-width: 220px; */
+}
+
+#footer .font-size-10 {
+  font-size: 10px;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  /* Mobile-specific adjustments */
+  .awsui-app-layout {
+    --awsui-app-layout-navigation-width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Small mobile adjustments */
+  .awsui-app-layout {
+    --awsui-app-layout-navigation-width: 100vw;
+  }
+}
+
+/* Loading state styling */
+.config-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus management for keyboard navigation */
+.awsui-button:focus,
+.awsui-input:focus,
+.awsui-select:focus {
+  outline: 2px solid #0073bb;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .awsui-app-layout {
+    --awsui-color-border-layout: #000000;
+  }
+}
+
+@media (min-width: 1000px) {
+  .custom-modal div[class*="awsui_large_"] {
+    min-width: 1200px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .custom-modal div[class*="awsui_large_"] {
+    min-width: 80vw !important;
+  }
+
+
+}

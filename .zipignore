@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+package-lock.json
+venv/
+__pycache__/
+
+# Build outputs
+dist/
+build/
+cdk.out/
+.vite/
+*.tsbuildinfo
+
+# Development files
+.memory_bank/
+.protoshield/
+.scripts/
+.vscode/
+.DS_Store
+
+# Environment files
+.env.local
+.env.development
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+Thumbs.db

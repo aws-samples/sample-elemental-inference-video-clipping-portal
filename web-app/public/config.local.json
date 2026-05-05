@@ -1,0 +1,44 @@
+{
+  "Auth": {
+    "Cognito": {
+      "userPoolId": "us-west-2_tCql59TYc",
+      "userPoolClientId": "3r7qj8ppimoufhuvt4bi1a8sv8",
+      "identityPoolId": "us-west-2:c7e9074e-eaff-4f62-aa53-a077ef03c920",
+      "loginWith": {
+        "username": true,
+        "email": true
+      },
+      "signUpVerificationMethod": "code",
+      "userAttributes": {
+        "email": {
+          "required": false
+        }
+      },
+      "allowGuestAccess": false,
+      "passwordFormat": {
+        "minLength": 8,
+        "requireLowercase": true,
+        "requireUppercase": true,
+        "requireNumbers": true,
+        "requireSpecialCharacters": true
+      }
+    }
+  },
+  "API": {
+    "REST": {
+      "api": {
+        "endpoint": "./api",
+        "region": "us-west-2"
+      }
+    }
+  },
+  "Storage": {
+    "S3": {
+      "bucket": "elemental-clip-portal-videoassetsbucket3b8c668c-bfcsuihgt6pa",
+      "region": "us-west-2"
+    }
+  },
+  "aws_video_assets_bucket": "elemental-clip-portal-videoassetsbucket3b8c668c-bfcsuihgt6pa",
+  "aws_video_assets_bucket_region": "us-west-2",
+  "aws_cloudfront_url": "https://d2fotgvmb07w9b.cloudfront.net"
+}

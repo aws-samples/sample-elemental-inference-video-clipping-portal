@@ -1,0 +1,208 @@
+{
+  "Comment": "Auto-harvest workflow: read autoHarvest setting → parallel harvest both orientations → update clip",
+  "StartAt": "ReadAutoHarvest",
+  "States": {
+    "ReadAutoHarvest": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${SystemSettingsTableName}",
+        "Key": { "settingKey": { "S": "autoHarvest" } }
+      },
+      "ResultSelector": { "value.$": "$.Item.settingValue.S" },
+      "ResultPath": "$.autoHarvest",
+      "Next": "CheckAutoHarvest",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.autoHarvest", "Next": "AutoHarvestSuccess" }]
+    },
+    "CheckAutoHarvest": {
+      "Type": "Choice",
+      "Choices": [
+        { "Variable": "$.autoHarvest.value", "StringEquals": "true", "Next": "SetBothOrientations" }
+      ],
+      "Default": "AutoHarvestSuccess"
+    },
+    "SetBothOrientations": {
+      "Type": "Pass",
+      "Result": { "orientations": ["landscape", "portrait"] },
+      "ResultPath": "$.resolved",
+      "Next": "ParallelHarvest"
+    },
+    "ParallelHarvest": {
+      "Type": "Map",
+      "ItemsPath": "$.resolved.orientations",
+      "MaxConcurrency": 2,
+      "ItemSelector": {
+        "orientation.$": "$$.Map.Item.Value",
+        "clipId.$": "$.clipId",
+        "channelId.$": "$.channelId",
+        "startTime.$": "$.startTime",
+        "endTime.$": "$.endTime",
+        "correlationId.$": "$$.Execution.Id",
+        "channelConfig.$": "$.channelConfig",
+        "bucket.$": "$.bucket"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "HarvestTask",
+        "States": {
+          "HarvestTask": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestTaskFunctionArn}",
+              "Payload": {
+                "clipId.$": "$.clipId",
+                "channelId.$": "$.channelId",
+                "orientation.$": "$.orientation",
+                "startTime.$": "$.startTime",
+                "endTime.$": "$.endTime",
+                "correlationId.$": "$.correlationId",
+                "channelConfig.$": "$.channelConfig"
+              }
+            },
+            "ResultSelector": {
+              "harvestJobName.$": "$.Payload.harvestJobName",
+              "s3Prefix.$": "$.Payload.s3Prefix",
+              "resolvedChannelConfig.$": "$.Payload.resolvedChannelConfig"
+            },
+            "ResultPath": "$.harvest",
+            "Next": "WaitForHarvest",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "OrientationFailed" }]
+          },
+          "WaitForHarvest": {
+            "Type": "Wait",
+            "Seconds": 30,
+            "Next": "HarvestPoll"
+          },
+          "HarvestPoll": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestPollFunctionArn}",
+              "Payload": {
+                "harvestJobName.$": "$.harvest.harvestJobName",
+                "channelConfig.$": "$.harvest.resolvedChannelConfig",
+                "correlationId.$": "$.correlationId"
+              }
+            },
+            "ResultSelector": { "status.$": "$.Payload.status" },
+            "ResultPath": "$.pollResult",
+            "Next": "EvaluateHarvestStatus",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "OrientationFailed" }],
+            "TimeoutSeconds": 900
+          },
+          "EvaluateHarvestStatus": {
+            "Type": "Choice",
+            "Choices": [
+              { "Variable": "$.pollResult.status", "StringEquals": "COMPLETED", "Next": "HarvestValidate" },
+              { "Variable": "$.pollResult.status", "StringEquals": "FAILED", "Next": "OrientationFailed" }
+            ],
+            "Default": "WaitForHarvest"
+          },
+          "HarvestValidate": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestValidateFunctionArn}",
+              "Payload": {
+                "s3Prefix.$": "$.harvest.s3Prefix",
+                "bucket.$": "$.bucket",
+                "correlationId.$": "$.correlationId",
+                "clipId.$": "$.clipId"
+              }
+            },
+            "ResultSelector": {
+              "valid.$": "$.Payload.valid",
+              "reason.$": "$.Payload.reason"
+            },
+            "ResultPath": "$.validation",
+            "Next": "CheckValidation",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "OrientationFailed" }]
+          },
+          "CheckValidation": {
+            "Type": "Choice",
+            "Choices": [
+              { "Variable": "$.validation.valid", "BooleanEquals": true, "Next": "UpdateClipOrientation" }
+            ],
+            "Default": "OrientationFailed"
+          },
+          "UpdateClipOrientation": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${ClipsTableName}",
+              "Key": { "id": { "S.$": "$.clipId" } },
+              "UpdateExpression": "SET sourceKeys = if_not_exists(sourceKeys, :emptyMap) ADD harvestedOrientations :orientSet",
+              "ExpressionAttributeValues": {
+                ":emptyMap": { "M": {} },
+                ":orientSet": { "SS.$": "States.Array($.orientation)" }
+              }
+            },
+            "ResultPath": null,
+            "Next": "SetOrientationSourceKey"
+          },
+          "SetOrientationSourceKey": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${ClipsTableName}",
+              "Key": { "id": { "S.$": "$.clipId" } },
+              "UpdateExpression": "SET sourceKeys.#orient = :prefix",
+              "ExpressionAttributeNames": { "#orient.$": "$.orientation" },
+              "ExpressionAttributeValues": {
+                ":prefix": { "S.$": "$.harvest.s3Prefix" }
+              }
+            },
+            "ResultPath": null,
+            "Next": "OrientationComplete"
+          },
+          "OrientationComplete": {
+            "Type": "Pass",
+            "Parameters": {
+              "orientation.$": "$.orientation",
+              "status": "success"
+            },
+            "End": true
+          },
+          "OrientationFailed": {
+            "Type": "Pass",
+            "Parameters": {
+              "orientation.$": "$.orientation",
+              "status": "failed"
+            },
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.harvestResults",
+      "Next": "UpdateClipStatus",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "AutoHarvestFailed" }]
+    },
+    "UpdateClipStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Comment": "Evaluate branch results: if any succeeded → status=archived, else leave as detected.",
+      "Parameters": {
+        "FunctionName": "${HarvestValidateFunctionArn}",
+        "Payload": {
+          "action": "finalize_auto_harvest",
+          "clipId.$": "$.clipId",
+          "harvestResults.$": "$.harvestResults"
+        }
+      },
+      "ResultPath": null,
+      "Next": "AutoHarvestSuccess",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "AutoHarvestSuccess" }]
+    },
+    "AutoHarvestSuccess": {
+      "Type": "Succeed"
+    },
+    "AutoHarvestFailed": {
+      "Type": "Fail",
+      "Error": "AutoHarvestFailed",
+      "Cause": "Auto-harvest workflow failed. Check execution history."
+    }
+  }
+}

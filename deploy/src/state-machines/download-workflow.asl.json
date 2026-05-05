@@ -1,0 +1,390 @@
+{
+  "Comment": "Download workflow: harvest-if-needed → transcode → update record per orientation",
+  "StartAt": "BuildOrientationList",
+  "States": {
+    "BuildOrientationList": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Comment": "Read Clip_Record, resolve which orientations need harvest vs skip-to-transcode",
+      "Parameters": {
+        "FunctionName": "${HarvestValidateFunctionArn}",
+        "Payload": {
+          "action": "resolve_orientations",
+          "clipId.$": "$.clipId",
+          "requestedOrientations.$": "$.orientations"
+        }
+      },
+      "ResultSelector": {
+        "orientations.$": "$.Payload.orientations"
+      },
+      "ResultPath": "$.resolved",
+      "Next": "ParallelOrientations",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "MarkDownloadFailed" }]
+    },
+    "ParallelOrientations": {
+      "Type": "Map",
+      "ItemsPath": "$.resolved.orientations",
+      "MaxConcurrency": 2,
+      "ItemSelector": {
+        "orientation.$": "$$.Map.Item.Value.orientation",
+        "needsHarvest.$": "$$.Map.Item.Value.needsHarvest",
+        "s3Prefix.$": "$$.Map.Item.Value.s3Prefix",
+        "clipId.$": "$.clipId",
+        "channelId.$": "$.channelId",
+        "startTime.$": "$.startTime",
+        "endTime.$": "$.endTime",
+        "downloadJobId.$": "$$.Map.Item.Value.downloadJobId",
+        "correlationId.$": "$$.Execution.Id",
+        "channelConfig.$": "$.channelConfig",
+        "mcRoleArn.$": "$.mcRoleArn",
+        "bucket.$": "$.bucket"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "CheckNeedsHarvest",
+        "States": {
+          "CheckNeedsHarvest": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.needsHarvest",
+                "BooleanEquals": false,
+                "Next": "TranscodeTask"
+              }
+            ],
+            "Default": "HarvestTask"
+          },
+          "HarvestTask": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestTaskFunctionArn}",
+              "Payload": {
+                "clipId.$": "$.clipId",
+                "channelId.$": "$.channelId",
+                "orientation.$": "$.orientation",
+                "startTime.$": "$.startTime",
+                "endTime.$": "$.endTime",
+                "correlationId.$": "$.correlationId",
+                "channelConfig.$": "$.channelConfig"
+              }
+            },
+            "ResultSelector": {
+              "harvestJobName.$": "$.Payload.harvestJobName",
+              "s3Prefix.$": "$.Payload.s3Prefix",
+              "resolvedChannelConfig.$": "$.Payload.resolvedChannelConfig"
+            },
+            "ResultPath": "$.harvest",
+            "Next": "WaitForHarvest",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "BranchFailed" }]
+          },
+          "WaitForHarvest": {
+            "Type": "Wait",
+            "Seconds": 30,
+            "Next": "HarvestPoll"
+          },
+          "HarvestPoll": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestPollFunctionArn}",
+              "Payload": {
+                "harvestJobName.$": "$.harvest.harvestJobName",
+                "channelConfig.$": "$.harvest.resolvedChannelConfig",
+                "correlationId.$": "$.correlationId"
+              }
+            },
+            "ResultSelector": {
+              "status.$": "$.Payload.status"
+            },
+            "ResultPath": "$.pollResult",
+            "Next": "EvaluateHarvestStatus",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "BranchFailed" }],
+            "TimeoutSeconds": 900
+          },
+          "EvaluateHarvestStatus": {
+            "Type": "Choice",
+            "Choices": [
+              { "Variable": "$.pollResult.status", "StringEquals": "COMPLETED", "Next": "HarvestValidate" },
+              { "Variable": "$.pollResult.status", "StringEquals": "FAILED", "Next": "BranchFailed" }
+            ],
+            "Default": "WaitForHarvest"
+          },
+          "HarvestValidate": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${HarvestValidateFunctionArn}",
+              "Payload": {
+                "s3Prefix.$": "$.harvest.s3Prefix",
+                "bucket.$": "$.bucket",
+                "correlationId.$": "$.correlationId",
+                "clipId.$": "$.clipId"
+              }
+            },
+            "ResultSelector": {
+              "valid.$": "$.Payload.valid",
+              "reason.$": "$.Payload.reason"
+            },
+            "ResultPath": "$.validation",
+            "Next": "CheckValidation",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "BranchFailed" }]
+          },
+          "CheckValidation": {
+            "Type": "Choice",
+            "Choices": [
+              { "Variable": "$.validation.valid", "BooleanEquals": true, "Next": "UpdateClipAfterHarvest" }
+            ],
+            "Default": "BranchFailed"
+          },
+          "UpdateClipAfterHarvest": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${ClipsTableName}",
+              "Key": { "id": { "S.$": "$.clipId" } },
+              "UpdateExpression": "SET sourceKeys = if_not_exists(sourceKeys, :emptyMap) ADD harvestedOrientations :orientSet",
+              "ExpressionAttributeValues": {
+                ":emptyMap": { "M": {} },
+                ":orientSet": { "SS.$": "States.Array($.orientation)" }
+              }
+            },
+            "ResultPath": null,
+            "Next": "SetSourceKey",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "TranscodeTask" }]
+          },
+          "SetSourceKey": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${ClipsTableName}",
+              "Key": { "id": { "S.$": "$.clipId" } },
+              "UpdateExpression": "SET sourceKeys.#orient = :prefix",
+              "ExpressionAttributeNames": { "#orient.$": "$.orientation" },
+              "ExpressionAttributeValues": {
+                ":prefix": { "S.$": "$.harvest.s3Prefix" }
+              }
+            },
+            "ResultPath": null,
+            "Next": "UseHarvestedPrefix",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "UseHarvestedPrefix" }]
+          },
+          "UseHarvestedPrefix": {
+            "Type": "Pass",
+            "Comment": "Overwrite s3Prefix with the actual harvested path so TranscodeTask gets the correct input",
+            "Parameters": {
+              "s3Prefix.$": "$.harvest.s3Prefix",
+              "orientation.$": "$.orientation",
+              "needsHarvest.$": "$.needsHarvest",
+              "clipId.$": "$.clipId",
+              "channelId.$": "$.channelId",
+              "startTime.$": "$.startTime",
+              "endTime.$": "$.endTime",
+              "downloadJobId.$": "$.downloadJobId",
+              "correlationId.$": "$.correlationId",
+              "channelConfig.$": "$.channelConfig",
+              "mcRoleArn.$": "$.mcRoleArn",
+              "bucket.$": "$.bucket",
+              "harvest.$": "$.harvest",
+              "validation.$": "$.validation"
+            },
+            "Next": "TranscodeTask"
+          },
+          "TranscodeTask": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${TranscodeTaskFunctionArn}",
+              "Payload": {
+                "s3SourceKey.$": "$.s3Prefix",
+                "orientation.$": "$.orientation",
+                "clipId.$": "$.clipId",
+                "outputPrefix.$": "States.Format('downloads/clip/{}/{}/', $.clipId, $.orientation)",
+                "mcRoleArn.$": "$.mcRoleArn",
+                "correlationId.$": "$.correlationId",
+                "downloadJobId.$": "$.downloadJobId"
+              }
+            },
+            "ResultSelector": {
+              "mediaConvertJobId.$": "$.Payload.mediaConvertJobId",
+              "outputPrefix.$": "$.Payload.outputPrefix"
+            },
+            "ResultPath": "$.transcode",
+            "Next": "WaitForTranscode",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "BranchFailed" }]
+          },
+          "WaitForTranscode": {
+            "Type": "Wait",
+            "Seconds": 15,
+            "Next": "TranscodePoll"
+          },
+          "TranscodePoll": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${TranscodePollFunctionArn}",
+              "Payload": {
+                "mediaConvertJobId.$": "$.transcode.mediaConvertJobId",
+                "correlationId.$": "$.correlationId"
+              }
+            },
+            "ResultSelector": {
+              "status.$": "$.Payload.status",
+              "outputFilePath.$": "$.Payload.outputFilePath",
+              "errorMessage.$": "$.Payload.errorMessage"
+            },
+            "ResultPath": "$.transcodeResult",
+            "Next": "EvaluateTranscodeStatus",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "BranchFailed" }],
+            "TimeoutSeconds": 600
+          },
+          "EvaluateTranscodeStatus": {
+            "Type": "Choice",
+            "Choices": [
+              { "Variable": "$.transcodeResult.status", "StringEquals": "COMPLETE", "Next": "BranchComplete" },
+              { "Variable": "$.transcodeResult.status", "StringEquals": "ERROR", "Next": "BranchFailed" },
+              { "Variable": "$.transcodeResult.status", "StringEquals": "CANCELED", "Next": "BranchFailed" }
+            ],
+            "Default": "WaitForTranscode"
+          },
+          "BranchComplete": {
+            "Type": "Pass",
+            "Parameters": {
+              "orientation.$": "$.orientation",
+              "downloadJobId.$": "$.downloadJobId",
+              "status": "completed",
+              "s3OutputKey.$": "$.transcodeResult.outputFilePath",
+              "errorMessage": ""
+            },
+            "End": true
+          },
+          "BranchFailed": {
+            "Type": "Pass",
+            "Parameters": {
+              "orientation.$": "$.orientation",
+              "downloadJobId.$": "$.downloadJobId",
+              "status": "failed",
+              "s3OutputKey": "",
+              "errorMessage.$": "States.Format('Branch failed for orientation {}', $.orientation)"
+            },
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.branchResults",
+      "Next": "UpdateDownloadRecords",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "MarkDownloadFailed" }]
+    },
+    "UpdateDownloadRecords": {
+      "Type": "Map",
+      "ItemsPath": "$.branchResults",
+      "ItemSelector": {
+        "downloadJobId.$": "$$.Map.Item.Value.downloadJobId",
+        "status.$": "$$.Map.Item.Value.status",
+        "s3OutputKey.$": "$$.Map.Item.Value.s3OutputKey",
+        "errorMessage.$": "$$.Map.Item.Value.errorMessage",
+        "correlationId.$": "$$.Execution.Id"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "CheckBranchStatus",
+        "States": {
+          "CheckBranchStatus": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.status",
+                "StringEquals": "completed",
+                "Next": "UpdateCompletedRecord"
+              }
+            ],
+            "Default": "UpdateFailedRecord"
+          },
+          "UpdateCompletedRecord": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${DownloadJobsTableName}",
+              "Key": { "jobId": { "S.$": "$.downloadJobId" } },
+              "UpdateExpression": "SET download_status = :s, s3OutputKey = :key, correlationId = :cid, updatedAt = :now",
+              "ExpressionAttributeValues": {
+                ":s": { "S.$": "$.status" },
+                ":key": { "S.$": "$.s3OutputKey" },
+                ":cid": { "S.$": "$.correlationId" },
+                ":now": { "S.$": "$$.State.EnteredTime" }
+              }
+            },
+            "End": true,
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "RecordUpdateDone" }]
+          },
+          "UpdateFailedRecord": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${DownloadJobsTableName}",
+              "Key": { "jobId": { "S.$": "$.downloadJobId" } },
+              "UpdateExpression": "SET download_status = :s, errorMessage = :err, correlationId = :cid, updatedAt = :now",
+              "ExpressionAttributeValues": {
+                ":s": { "S.$": "$.status" },
+                ":err": { "S.$": "$.errorMessage" },
+                ":cid": { "S.$": "$.correlationId" },
+                ":now": { "S.$": "$$.State.EnteredTime" }
+              }
+            },
+            "End": true,
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "RecordUpdateDone" }]
+          },
+          "RecordUpdateDone": { "Type": "Pass", "End": true }
+        }
+      },
+      "ResultPath": null,
+      "Next": "UpdateMainJobRecord"
+    },
+    "UpdateMainJobRecord": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "${DownloadJobsTableName}",
+        "Key": { "jobId": { "S.$": "$.downloadJobId" } },
+        "UpdateExpression": "SET download_status = :s, branchResults = :br, updatedAt = :now",
+        "ExpressionAttributeValues": {
+          ":s": { "S": "completed" },
+          ":br": { "S.$": "States.JsonToString($.branchResults)" },
+          ":now": { "S.$": "$$.State.EnteredTime" }
+        }
+      },
+      "ResultPath": null,
+      "Next": "DownloadSuccess",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DownloadSuccess" }]
+    },
+    "MarkDownloadFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "${DownloadJobsTableName}",
+        "Key": { "jobId": { "S.$": "$.downloadJobId" } },
+        "UpdateExpression": "SET download_status = :s, errorMessage = :err, updatedAt = :now",
+        "ExpressionAttributeValues": {
+          ":s": { "S": "failed" },
+          ":err": { "S": "Download workflow failed" },
+          ":now": { "S.$": "$$.State.EnteredTime" }
+        }
+      },
+      "ResultPath": null,
+      "Next": "DownloadFailed",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DownloadFailed" }]
+    },
+    "DownloadFailed": {
+      "Type": "Fail",
+      "Error": "DownloadWorkflowFailed",
+      "Cause": "Download workflow failed. Check execution history for details."
+    },
+    "DownloadSuccess": {
+      "Type": "Succeed"
+    }
+  }
+}

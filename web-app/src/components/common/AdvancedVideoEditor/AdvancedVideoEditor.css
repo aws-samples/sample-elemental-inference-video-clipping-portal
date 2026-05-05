@@ -1,0 +1,940 @@
+/* Advanced Video Editor Styles */
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+.advanced-video-editor {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    position: relative;
+}
+
+/* Performance optimization during dragging */
+.advanced-video-editor.dragging-trim {
+    pointer-events: none;
+}
+
+.advanced-video-editor.dragging-trim .trim-handle.dragging {
+    pointer-events: auto;
+}
+
+.advanced-video-editor.dragging-trim .trim-timeline {
+    pointer-events: auto;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.video-element {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+.video-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    background: #000;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.video-error p {
+    color: #fff;
+    font-size: 16px;
+    margin: 0;
+}
+
+.play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.play-overlay.visible {
+    opacity: 1;
+}
+
+.play-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.play-button {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Loading Overlay */
+.video-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.video-loading-overlay p {
+    margin: 16px 0 0 0;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Undo/Redo Controls */
+.undo-redo-controls {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    justify-content: center;
+}
+
+.undo-redo-controls button {
+    min-width: 120px;
+}
+
+/* Operations Summary */
+.operations-summary {
+    padding: 8px 8px 2px 8px;
+    /* background: linear-gradient(135deg, #a2c2e2 0%, #79ade1 100%); */
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.summary-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.stat {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.stat strong {
+    color: #1e293b;
+}
+
+.operations-list {
+    margin-bottom: 16px;
+}
+
+.operations-list h5 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.operations-items {
+    display: flex;
+    flex-direction: column;
+    font-weight: 600;
+    gap: 4px;
+}
+
+.operation-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* padding: 6px 12px; */
+    /* background: rgba(255, 255, 255, 0.8); */
+    /* border-radius: 6px; */
+    /* border: 1px solid rgba(0, 0, 0, 0.05); */
+    font-size: 12px;
+    color: #fff;
+}
+
+/* .operation-item.enabled {
+    border-left: 3px solid #22c55e;
+}
+
+.operation-item.disabled {
+    border-left: 3px solid #ef4444;
+    opacity: 0.7;
+} */
+
+.operation-type {
+    font-weight: 600;
+    color: #3b82f6;
+    min-width: 50px;
+}
+
+.operation-description {
+    flex: 1;
+    /* color: #374151; */
+    color: #fff;
+}
+
+.operation-status {
+    font-size: 10px;
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.instruction-item {
+    font-size: 12px;
+    color: #64748b;
+    padding: 4px 0 !important;
+}
+
+.instruction-item strong {
+    color: #374151;
+}
+
+/* Three-Timeline System - Optimized for performance */
+.timelines-container {
+    position: relative;
+    padding: 0 10px 0 10px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* Remove gaps between timelines */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    /* Enable hardware acceleration for the container */
+    transform: translate3d(0, 0, 0);
+    will-change: auto;
+}
+
+.timeline-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0; /* Remove margin between sections */
+}
+
+.timeline-label {
+    min-width: 70px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-align: right;
+    padding-right: 8px;
+}
+
+.timeline {
+    position: relative;
+    flex: 1;
+    height: 32px;
+    border-radius: 0; /* Remove border radius for continuous look */
+    overflow: visible;
+    transition: all 0.2s ease;
+    /* Optimize for frequent updates */
+    will-change: auto;
+    transform: translate3d(0, 0, 0);
+}
+
+.timeline.active {
+    height: 60px;
+}
+
+/* Main Timeline */
+.main-timeline {
+    background: #3a3a3a;
+    cursor: pointer;
+    position: relative;
+}
+
+.main-track {
+    width: 100%;
+    height: 100%;
+    background: #3a3a3a;
+    border-radius: 0; /* Remove border radius */
+}
+
+/* Trimmed section highlight on main timeline */
+.main-timeline .trim-region-highlight {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.2) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.main-timeline .trim-region-highlight::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 8px,
+        rgba(34, 197, 94, 0.1) 8px,
+        rgba(34, 197, 94, 0.1) 16px
+    );
+}
+
+/* Trim Timeline */
+.trim-timeline {
+    background: linear-gradient(to right, #f3f4f6 0%, #f3f4f6 100%);
+    cursor: pointer;
+    position: relative;
+}
+
+.trim-track {
+    width: 100%;
+    height: 100%;
+    /* background: #3a3a3a; */
+    background: #5a5a5a;
+    border-radius: 0; /* Remove border radius */
+}
+
+/* Split Timeline */
+.split-timeline {
+    background: linear-gradient(to right, #f8fafc 0%, #f1f5f9 100%);
+    cursor: crosshair;
+    position: relative;
+}
+
+.split-info {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 4px;
+    text-align: center;
+    color: #eee;
+    font-size: 10px;
+}
+
+.split-track {
+    width: 100%;
+    height: 100%;
+    /* background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); */
+    background: #3a3a3a;
+    border-radius: 0; /* Remove border radius */
+    border: 1px solid #5a5a5a;
+    border-top: 0;
+}
+
+/* Time Markers */
+.time-marker {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* Major time markers (every 30 seconds) */
+.time-marker.major .time-marker-line {
+    width: 1px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Sub time markers (every 10 seconds) */
+.time-marker.sub .time-marker-line {
+    width: 1px;
+    height: 60%;
+    background: rgba(255, 255, 255, 0.1);
+    margin-top: 20%;
+}
+
+.time-marker-line {
+    width: 1px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.time-marker-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 300;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+
+    padding: 1px 4px;
+    border-radius: 2px;
+    white-space: nowrap;
+
+    z-index: 5; /* Lower z-index so playhead is above */
+}
+
+/* Video Segments */
+.video-segment {
+    position: absolute;
+    top: 0;
+    height: calc(100% - 24px);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    overflow: hidden;
+    user-select: none;
+}
+
+.video-segment.enabled {
+    background: #22c55e;
+    border-color: #15803d;
+}
+
+.video-segment.disabled {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #b91c1c;
+    opacity: 0.7;
+}
+
+.video-segment.disabled::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 6px,
+        rgba(0, 0, 0, 0.3) 6px,
+        rgba(0, 0, 0, 0.3) 12px
+    );
+}
+
+.video-segment:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.video-segment.enabled:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.video-segment.disabled:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.segment-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    padding: 2px 4px;
+    text-align: center;
+    gap: 2px;
+}
+
+/* Drag handle styles removed - drag and drop functionality disabled */
+
+.segment-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 9px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.segment-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.segment-control-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 2px;
+    padding: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.2s ease;
+    min-width: 16px;
+    height: 16px;
+}
+
+.segment-control-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.segment-control-btn.toggle {
+    color: white;
+}
+
+/* Current Time Indicators - Unified Playhead */
+.current-time-indicator {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: calc(100% + 4px);
+    background: cyan;
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    z-index: 25;
+    pointer-events: none;
+}
+
+/* Only the main timeline gets the handle */
+.current-time-indicator.main::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Preview Time Indicators */
+.preview-time-indicator {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: rgba(59, 130, 246, 0.6);
+    pointer-events: none;
+    z-index: 20;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+}
+
+.preview-time-indicator {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: rgba(100, 116, 139, 0.3);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Controls */
+.controls-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    /* background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); */
+    background: #000;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-button {
+    /* background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); */
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 1) !important;
+    border-radius: 12px !important;
+    margin: 0;
+    height: 40px;
+    padding: 12px !important;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    color: #475569 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.control-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.1);
+}
+
+.control-button:active:not(:disabled) {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.control-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.time-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 14px;
+    color: #eee;
+    /* background: rgba(255, 255, 255, 0.8); */
+    padding: 8px 12px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.separator {
+    color: #666;
+}
+
+/* Volume Controls */
+.volume-controls {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.volume-slider-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-125%);
+    /* background: rgba(0, 0, 0, 0.8); */
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.volume-tooltip {
+    color: white;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.volume-slider {
+    width: 80px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #0073bb;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #0073bb;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+/* Operation Summary */
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .controls-container {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .playback-controls {
+        justify-content: center;
+    }
+
+    .timeline {
+        height: 50px;
+    }
+
+    .mode-instructions {
+        text-align: center;
+    }
+}
+
+/* Trim Region and Handles */
+
+/* Trim Region - No highlighting, just for positioning handles */
+.trim-region {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(245, 158, 11, 1);
+    border: 1px solid #f59e0b;
+    border-radius: 0;
+    will-change: transform, width; /* Optimize for frequent changes */
+    transform: translate3d(0, 0, 0); /* Hardware acceleration */
+}
+
+/* Excluded sections (parts that will be removed) */
+.excluded-section {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.7) 0%, rgba(220, 38, 38, 0.5) 100%);
+    border: 1px solid #ef4444;
+    will-change: transform, width;
+    transform: translate3d(0, 0, 0);
+    z-index: 5;
+}
+
+/* Striped pattern overlay for excluded sections */
+.excluded-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 6px,
+        rgba(0, 0, 0, 0.3) 6px,
+        rgba(0, 0, 0, 0.3) 12px
+    );
+    pointer-events: none;
+}
+
+/* Labels for excluded sections */
+.excluded-section.start::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.3px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.excluded-section.end::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.3px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Remove trim region label since we're not highlighting the kept section */
+
+/* Trim Handles - Optimized for performance */
+.trim-handle {
+    position: absolute;
+    top: -4px;
+    width: 24px;
+    height: calc(100% + 8px);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Remove transition during dragging for better performance */
+    transition: none;
+    will-change: transform; /* Optimize for transforms */
+}
+
+.trim-handle:not(.dragging) {
+    transition: all 0.15s ease; /* Only transition when not dragging */
+}
+
+.trim-handle.start {
+    transform: translateX(-50%);
+}
+
+.trim-handle.end {
+    transform: translateX(-50%);
+}
+
+.trim-handle.dragging {
+    z-index: 25;
+    /* Disable pointer events on other elements during drag */
+}
+
+.handle-grip {
+    width: 10px; /* Slightly larger for better grab area */
+    height: 28px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 2px;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    cursor: col-resize !important;
+    /* Use transform3d for hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    transition: none;
+}
+
+.trim-handle:not(.dragging) .handle-grip {
+    transition: all 0.15s ease;
+}
+
+.handle-grip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 1px;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.trim-handle:hover:not(.dragging) .handle-grip {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translate3d(0, 0, 0) scale(1.05);
+}
+
+.trim-handle.dragging .handle-grip {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+    border-color: rgba(255, 255, 255, 0.8);
+    transform: translate3d(0, 0, 0) scale(1.1);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.handle-label {
+    position: absolute;
+    top: -28px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate3d(0, 0, 0); /* Hardware acceleration */
+    transition: none;
+    pointer-events: none; /* Prevent interference with dragging */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trim-handle:not(.dragging) .handle-label {
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+
+.trim-handle:hover .handle-label,
+.trim-handle.dragging .handle-label {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0);
+}

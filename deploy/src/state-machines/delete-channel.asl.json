@@ -1,0 +1,155 @@
+{
+  "Comment": "DeleteChannel: best-effort cleanup of all channel resources. Each step catches errors and continues to the next.",
+  "StartAt": "DeleteMediaLiveChannel",
+  "States": {
+    "DeleteMediaLiveChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "delete_channel",
+          "params": {
+            "channel_id.$": "$.channelId"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "DeleteMediaLiveInput",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteMediaLiveInput" }]
+    },
+    "DeleteMediaLiveInput": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "delete_input",
+          "params": {
+            "input_id.$": "$.inputId"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "DeleteInferenceFeed",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteInferenceFeed" }]
+    },
+    "DeleteInferenceFeed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateFeedFunctionArn}",
+        "Payload": {
+          "action": "delete",
+          "feedId.$": "$.feedId"
+        }
+      },
+      "ResultPath": null,
+      "Next": "DeleteEndpointPolicies",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteEndpointPolicies" }]
+    },
+    "DeleteEndpointPolicies": {
+      "Type": "Task",
+      "Comment": "Delete all 3 endpoint policies via Lambda",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateFeedFunctionArn}",
+        "Payload": {
+          "action": "delete_endpoint_policies",
+          "channelGroupName.$": "$.channelGroupName",
+          "channelName.$": "$.mediaPackageChannelName",
+          "endpoints.$": "States.Array($.originEndpointName, $.landscapeEndpointName, $.verticalEndpointName)"
+        }
+      },
+      "ResultPath": null,
+      "Next": "DeleteOriginEndpoints",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteOriginEndpoints" }]
+    },
+    "DeleteOriginEndpoints": {
+      "Type": "Parallel",
+      "Comment": "Delete all 3 origin endpoints",
+      "ResultPath": null,
+      "Next": "DeleteMediaPackageChannel",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteMediaPackageChannel" }],
+      "Branches": [
+        {
+          "StartAt": "DeleteMainEndpoint",
+          "States": {
+            "DeleteMainEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.mediaPackageChannelName",
+                "OriginEndpointName.$": "$.originEndpointName"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MainEpDone" }]
+            },
+            "MainEpDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteLandscapeEndpoint",
+          "States": {
+            "DeleteLandscapeEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.mediaPackageChannelName",
+                "OriginEndpointName.$": "$.landscapeEndpointName"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "LandscapeEpDone" }]
+            },
+            "LandscapeEpDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteVerticalEndpoint",
+          "States": {
+            "DeleteVerticalEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.mediaPackageChannelName",
+                "OriginEndpointName.$": "$.verticalEndpointName"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "VerticalEpDone" }]
+            },
+            "VerticalEpDone": { "Type": "Pass", "End": true }
+          }
+        }
+      ]
+    },
+    "DeleteMediaPackageChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteChannel",
+      "Parameters": {
+        "ChannelGroupName.$": "$.channelGroupName",
+        "ChannelName.$": "$.mediaPackageChannelName"
+      },
+      "ResultPath": null,
+      "Next": "DeleteDynamoDBRecord",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteDynamoDBRecord" }]
+    },
+    "DeleteDynamoDBRecord": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:deleteItem",
+      "Parameters": {
+        "TableName": "${ChannelsTableName}",
+        "Key": {
+          "id": { "S.$": "$.channelId" }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "type": {
+    "soccer": {
+      "label": "Soccer",
+      "value": "soccer"
+    },
+    "football": {
+      "label": "American Football",
+      "value": "football"
+    },
+    "basketball": {
+      "label": "Basketball",
+      "value": "basketball"
+    },
+    "baseball": {
+      "label": "Baseball",
+      "value": "baseball"
+    }
+  },
+  "keyMoments": {
+    "soccer": [
+      { "label": "Goal", "value": "goal", "priority": 1 },
+      { "label": "Shot", "value": "shot", "priority": 2 },
+      { "label": "Save", "value": "save", "priority": 2 },
+      { "label": "Celebration", "value": "celebration", "priority": 3 },
+      { "label": "Incident", "value": "incident", "priority": 2 },
+      { "label": "Crowd", "value": "crowd", "priority": 4 },
+      { "label": "Corner Kick", "value": "corner_kick", "priority": 3 },
+      { "label": "Free Kick", "value": "free_kick", "priority": 3 },
+      { "label": "Penalty", "value": "penalty", "priority": 1 },
+      { "label": "Offside", "value": "offside", "priority": 4 },
+      { "label": "Yellow Card", "value": "yellow_card", "priority": 3 },
+      { "label": "Red Card", "value": "red_card", "priority": 2 }
+    ],
+    "football": [
+      { "label": "Kick-off", "value": "kick_off", "priority": 4 },
+      { "label": "Touchdown", "value": "touchdown", "priority": 1 },
+      { "label": "Field Goal", "value": "field_goal", "priority": 2 },
+      { "label": "Punt", "value": "punt", "priority": 4 },
+      { "label": "Fumble", "value": "fumble", "priority": 2 },
+      { "label": "Penalty", "value": "penalty", "priority": 3 },
+      { "label": "Rush", "value": "rush", "priority": 3 },
+      { "label": "Defensive Play", "value": "defensive_play", "priority": 3 },
+      { "label": "Interception", "value": "interception", "priority": 2 },
+      { "label": "Sack", "value": "sack", "priority": 2 },
+      { "label": "Safety", "value": "safety", "priority": 1 },
+      { "label": "Two-Point Conversion", "value": "two_point_conversion", "priority": 2 }
+    ],
+    "basketball": [
+      { "label": "Dunk", "value": "dunk", "priority": 1 },
+      { "label": "Three-Pointer", "value": "three_pointer", "priority": 2 },
+      { "label": "Free Throw", "value": "free_throw", "priority": 4 },
+      { "label": "Steal", "value": "steal", "priority": 2 },
+      { "label": "Block", "value": "block", "priority": 2 },
+      { "label": "Rebound", "value": "rebound", "priority": 3 },
+      { "label": "Assist", "value": "assist", "priority": 3 },
+      { "label": "Foul", "value": "foul", "priority": 4 },
+      { "label": "Timeout", "value": "timeout", "priority": 5 },
+      { "label": "Buzzer Beater", "value": "buzzer_beater", "priority": 1 }
+    ],
+    "baseball": [
+      { "label": "Home Run", "value": "home_run", "priority": 1 },
+      { "label": "Strikeout", "value": "strikeout", "priority": 3 },
+      { "label": "Double Play", "value": "double_play", "priority": 2 },
+      { "label": "Stolen Base", "value": "stolen_base", "priority": 3 },
+      { "label": "Walk", "value": "walk", "priority": 4 },
+      { "label": "Hit", "value": "hit", "priority": 3 },
+      { "label": "Error", "value": "error", "priority": 4 },
+      { "label": "Catch", "value": "catch", "priority": 3 },
+      { "label": "Pitch", "value": "pitch", "priority": 5 },
+      { "label": "Bunt", "value": "bunt", "priority": 4 }
+    ]
+  }
+}

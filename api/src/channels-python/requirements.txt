@@ -1,0 +1,11 @@
+# AWS SDK (boto3 is included in Lambda runtime, but explicit for local dev)
+boto3>=1.42.63
+
+# AWS Lambda Powertools (minimal install, no [all] extras)
+aws-lambda-powertools>=2.30.0
+aws-xray-sdk>=2.12.0
+fastjsonschema>=2.16.0
+
+# Pin versions to avoid Poetry conflicts
+platformdirs<4.0.0,>=3.0.0
+urllib3<2.0.0,>=1.26.0

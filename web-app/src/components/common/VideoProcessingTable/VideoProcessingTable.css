@@ -1,0 +1,122 @@
+/* Video Processing Table Styles */
+
+.video-processing-table {
+    width: 100%;
+}
+
+.job-status-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.job-progress {
+    width: 100%;
+    max-width: 120px;
+}
+
+.job-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.job-name {
+    font-weight: 600;
+    color: #232f3e;
+}
+
+.job-id {
+    font-size: 12px;
+    color: #687078;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.operations-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.operations-summary {
+    font-size: 14px;
+    color: #232f3e;
+}
+
+.operations-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.datetime-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.datetime-primary {
+    font-size: 14px;
+    color: #232f3e;
+}
+
+.datetime-secondary {
+    font-size: 12px;
+    color: #687078;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.action-button {
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Status indicators */
+.status-completed {
+    color: #037f0c;
+}
+
+.status-processing {
+    color: #0073bb;
+}
+
+.status-pending {
+    color: #ff9900;
+}
+
+.status-failed {
+    color: #d13212;
+}
+
+.status-cancelled {
+    color: #687078;
+}
+
+/* Progress bar customization */
+.processing-progress {
+    margin-top: 4px;
+}
+
+.processing-progress .awsui-progress-bar {
+    height: 6px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .operations-badges {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .actions-cell {
+        flex-direction: column;
+    }
+}

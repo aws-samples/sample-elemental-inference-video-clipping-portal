@@ -1,0 +1,439 @@
+{
+  "Comment": "CreateChannel saga: provisions MediaPackage channel, origin endpoints, endpoint policies, inference feed, MediaLive input/channel, and persists enriched record to DynamoDB. On failure, compensates in reverse order.",
+  "StartAt": "CreateMediaPackageChannel",
+  "States": {
+    "CreateMediaPackageChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:createChannel",
+      "Parameters": {
+        "ChannelGroupName.$": "$.channelGroupName",
+        "ChannelName.$": "$.channelName",
+        "InputType": "CMAF",
+        "Description.$": "States.Format('Channel for {}', $.channelName)"
+      },
+      "ResultPath": "$.mediaPackageChannel",
+      "Next": "CreateOriginEndpoints",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "HandleFailure" }]
+    },
+    "CreateOriginEndpoints": {
+      "Type": "Parallel",
+      "ResultPath": "$.originEndpoints",
+      "Next": "SetEndpointPolicies",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CleanupOriginEndpoints" }],
+      "Branches": [
+        {
+          "StartAt": "CreateMainEndpoint",
+          "States": {
+            "CreateMainEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:createOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-main', $.channelName)",
+                "ContainerType": "CMAF",
+                "StartoverWindowSeconds": 1209600,
+                "HlsManifests": [{ "ManifestName": "main", "ManifestWindowSeconds": 900, "ProgramDateTimeIntervalSeconds": 60, "ScteHls": { "AdMarkerHls": "DATERANGE" } }],
+                "Segment": { "SegmentDurationSeconds": 1 }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CreateLandscapeEndpoint",
+          "States": {
+            "CreateLandscapeEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:createOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-landscape', $.channelName)",
+                "ContainerType": "CMAF",
+                "StartoverWindowSeconds": 1209600,
+                "HlsManifests": [{ "ManifestName": "main", "ManifestWindowSeconds": 900, "ProgramDateTimeIntervalSeconds": 60, "ScteHls": { "AdMarkerHls": "DATERANGE" }, "FilterConfiguration": { "ManifestFilter": "video_bitrate:0-3100000" } }],
+                "Segment": { "SegmentDurationSeconds": 1 }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CreateVerticalEndpoint",
+          "States": {
+            "CreateVerticalEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:createOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-vertical', $.channelName)",
+                "ContainerType": "CMAF",
+                "StartoverWindowSeconds": 1209600,
+                "HlsManifests": [{ "ManifestName": "main", "ManifestWindowSeconds": 900, "ProgramDateTimeIntervalSeconds": 60, "ScteHls": { "AdMarkerHls": "DATERANGE" }, "FilterConfiguration": { "ManifestFilter": "video_bitrate:3100000-4000000" } }],
+                "Segment": { "SegmentDurationSeconds": 1 }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "SetEndpointPolicies": {
+      "Type": "Task",
+      "Comment": "Apply public access and harvest policies to all 3 origin endpoints via Lambda",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateFeedFunctionArn}",
+        "Payload": {
+          "action": "set_endpoint_policies",
+          "channelGroupName.$": "$.channelGroupName",
+          "channelName.$": "$.channelName"
+        }
+      },
+      "ResultPath": "$.endpointPolicies",
+      "Next": "CreateInferenceFeed",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CleanupEndpointPolicies" }]
+    },
+    "CreateInferenceFeed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateFeedFunctionArn}",
+        "Payload": {
+          "channelName.$": "$.channelName"
+        }
+      },
+      "ResultSelector": {
+        "feedId.$": "$.Payload.feedId",
+        "feedArn.$": "$.Payload.feedArn"
+      },
+      "ResultPath": "$.feed",
+      "Next": "CreateMediaLiveInput",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CleanupInferenceFeed" }]
+    },
+    "CreateMediaLiveInput": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "create_input",
+          "params": {
+            "Name.$": "States.Format('{}-input', $.inputName)",
+            "Type.$": "$.inputType",
+            "Sources.$": "$.inputSources"
+          }
+        }
+      },
+      "ResultSelector": {
+        "parsed.$": "States.StringToJson($.Payload.body)"
+      },
+      "ResultPath": "$.mediaLiveInputRaw",
+      "Next": "ExtractInputId",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CleanupMediaLiveInput" }]
+    },
+    "ExtractInputId": {
+      "Type": "Pass",
+      "Parameters": {
+        "inputId.$": "$.mediaLiveInputRaw.parsed.input.Input.Id"
+      },
+      "ResultPath": "$.mediaLiveInput",
+      "Next": "CreateMediaLiveChannel"
+    },
+    "CreateMediaLiveChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "create_channel",
+          "params": {
+            "Name.$": "$.channelName",
+            "ChannelClass": "SINGLE_PIPELINE",
+            "InputAttachments": [
+              {
+                "InputAttachmentName": "primary-input",
+                "InputId.$": "$.mediaLiveInput.inputId",
+                "InputSettings": {
+                  "SourceEndBehavior": "LOOP"
+                }
+              }
+            ],
+            "InputSpecification": {
+              "Codec": "AVC",
+              "Resolution": "HD",
+              "MaximumBitrate": "MAX_20_MBPS"
+            },
+            "Destinations": [
+              {
+                "Id": "mediapackage-v2",
+                "MediaPackageSettings": [
+                  {
+                    "ChannelGroup.$": "$.channelGroupName",
+                    "ChannelName.$": "$.channelName"
+                  }
+                ]
+              }
+            ],
+            "EncoderSettings.$": "$.encoderSettings",
+            "LogLevel": "INFO",
+            "InferenceSettings": {
+              "FeedArn.$": "$.feed.feedArn"
+            }
+          }
+        }
+      },
+      "ResultSelector": {
+        "parsed.$": "States.StringToJson($.Payload.body)"
+      },
+      "ResultPath": "$.mediaLiveChannelRaw",
+      "Next": "ExtractChannelDetails",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CleanupMediaLiveChannel" }]
+    },
+    "ExtractChannelDetails": {
+      "Type": "Pass",
+      "Parameters": {
+        "channelId.$": "$.mediaLiveChannelRaw.parsed.channel.Channel.Id",
+        "channelArn.$": "$.mediaLiveChannelRaw.parsed.channel.Channel.Arn",
+        "channelState.$": "$.mediaLiveChannelRaw.parsed.channel.Channel.State"
+      },
+      "ResultPath": "$.mediaLiveChannel",
+      "Next": "PersistChannelRecord"
+    },
+    "PersistChannelRecord": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "${ChannelsTableName}",
+        "Item": {
+          "id": { "S.$": "$.mediaLiveChannel.channelId" },
+          "name": { "S.$": "$.channelName" },
+          "arn": { "S.$": "$.mediaLiveChannel.channelArn" },
+          "state": { "S.$": "$.mediaLiveChannel.channelState" },
+          "region": { "S.$": "$.region" },
+          "feedId": { "S.$": "$.feed.feedId" },
+          "feedArn": { "S.$": "$.feed.feedArn" },
+          "inputId": { "S.$": "$.mediaLiveInput.inputId" },
+          "channelGroupName": { "S.$": "$.channelGroupName" },
+          "mediaPackageChannelName": { "S.$": "$.channelName" },
+          "originEndpointName": { "S.$": "States.Format('{}-main', $.channelName)" },
+          "landscapeEndpointName": { "S.$": "States.Format('{}-landscape', $.channelName)" },
+          "verticalEndpointName": { "S.$": "States.Format('{}-vertical', $.channelName)" },
+          "manifestUrl": { "S.$": "$.originEndpoints[0].HlsManifests[0].Url" },
+          "landscapeManifestUrl": { "S.$": "$.originEndpoints[1].HlsManifests[0].Url" },
+          "verticalManifestUrl": { "S.$": "$.originEndpoints[2].HlsManifests[0].Url" },
+          "provisioningStatus": { "S": "ACTIVE" },
+          "createdAt": { "S.$": "$$.State.EnteredTime" },
+          "updatedAt": { "S.$": "$$.State.EnteredTime" }
+        }
+      },
+      "ResultPath": "$.persistResult",
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "CleanupMediaLiveChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "delete_channel",
+          "params": {
+            "channel_id.$": "$.mediaLiveChannel.channelId"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "CleanupMediaLiveInput",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "CleanupMediaLiveInput" }]
+    },
+    "CleanupMediaLiveInput": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "delete_input",
+          "params": {
+            "input_id.$": "$.mediaLiveInput.inputId"
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "CleanupInferenceFeed",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "CleanupInferenceFeed" }]
+    },
+    "CleanupInferenceFeed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateFeedFunctionArn}",
+        "Payload": {
+          "action": "delete",
+          "feedId.$": "$.feed.feedId"
+        }
+      },
+      "ResultPath": null,
+      "Next": "CleanupEndpointPolicies",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "CleanupEndpointPolicies" }]
+    },
+    "CleanupEndpointPolicies": {
+      "Type": "Parallel",
+      "Comment": "Best-effort removal of endpoint policies for all 3 endpoints",
+      "ResultPath": null,
+      "Next": "CleanupOriginEndpoints",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "CleanupOriginEndpoints" }],
+      "Branches": [
+        {
+          "StartAt": "DeleteMainEndpointPolicy",
+          "States": {
+            "DeleteMainEndpointPolicy": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpointPolicy",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-main', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MainPolicyCleanupDone" }]
+            },
+            "MainPolicyCleanupDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteLandscapeEndpointPolicy",
+          "States": {
+            "DeleteLandscapeEndpointPolicy": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpointPolicy",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-landscape', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "LandscapePolicyCleanupDone" }]
+            },
+            "LandscapePolicyCleanupDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteVerticalEndpointPolicy",
+          "States": {
+            "DeleteVerticalEndpointPolicy": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpointPolicy",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-vertical', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "VerticalPolicyCleanupDone" }]
+            },
+            "VerticalPolicyCleanupDone": { "Type": "Pass", "End": true }
+          }
+        }
+      ]
+    },
+    "CleanupOriginEndpoints": {
+      "Type": "Parallel",
+      "Comment": "Best-effort removal of all 3 origin endpoints",
+      "ResultPath": null,
+      "Next": "CleanupMediaPackageChannel",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "CleanupMediaPackageChannel" }],
+      "Branches": [
+        {
+          "StartAt": "DeleteMainEndpoint",
+          "States": {
+            "DeleteMainEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-main', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MainEndpointCleanupDone" }]
+            },
+            "MainEndpointCleanupDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteLandscapeEndpoint",
+          "States": {
+            "DeleteLandscapeEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-landscape', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "LandscapeEndpointCleanupDone" }]
+            },
+            "LandscapeEndpointCleanupDone": { "Type": "Pass", "End": true }
+          }
+        },
+        {
+          "StartAt": "DeleteVerticalEndpoint",
+          "States": {
+            "DeleteVerticalEndpoint": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteOriginEndpoint",
+              "Parameters": {
+                "ChannelGroupName.$": "$.channelGroupName",
+                "ChannelName.$": "$.channelName",
+                "OriginEndpointName.$": "States.Format('{}-vertical', $.channelName)"
+              },
+              "End": true,
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "VerticalEndpointCleanupDone" }]
+            },
+            "VerticalEndpointCleanupDone": { "Type": "Pass", "End": true }
+          }
+        }
+      ]
+    },
+    "CleanupMediaPackageChannel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:mediapackagev2:deleteChannel",
+      "Parameters": {
+        "ChannelGroupName.$": "$.channelGroupName",
+        "ChannelName.$": "$.channelName"
+      },
+      "ResultPath": null,
+      "Next": "HandleFailure",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "HandleFailure" }]
+    },
+    "HandleFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "${ChannelsTableName}",
+        "Key": {
+          "id": { "S.$": "$.channelName" }
+        },
+        "UpdateExpression": "SET provisioningStatus = :failed, provisioningError = :error, updatedAt = :now",
+        "ExpressionAttributeValues": {
+          ":failed": { "S": "FAILED" },
+          ":error": { "S.$": "States.JsonToString($.error)" },
+          ":now": { "S.$": "$$.State.EnteredTime" }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Fail"
+    },
+    "Fail": {
+      "Type": "Fail",
+      "Error": "ChannelCreationFailed",
+      "Cause": "Channel creation failed. Resources have been cleaned up. Check provisioningError in DynamoDB for details."
+    }
+  }
+}

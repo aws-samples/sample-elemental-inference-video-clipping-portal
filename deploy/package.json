@@ -1,0 +1,39 @@
+{
+  "name": "cdk",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "bootstrap": "cdk bootstrap --qualifier sf2025 --cloudformation-execution-policies 'arn:aws:iam::aws:policy/PowerUserAccess,arn:aws:iam::aws:policy/IAMFullAccess'",
+    "deploy": "cdk deploy --require-approval never",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.(ts|tsx|js|jsx)\""
+  },
+  "devDependencies": {
+    "@aws-cdk/aws-lambda-python-alpha": "^2.200.1-alpha.0",
+    "@types/git-branch": "^2.0.5",
+    "@types/git-repo-name": "^1.0.4",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "aws-cdk": "^2.1018.0",
+    "aws-cdk-lib": "^2.200.1",
+    "aws-sdk": "^2.1692.0",
+    "cdk-nag": "^2.36.15",
+    "constructs": "^10.4.2",
+    "esbuild": "^0.21.5",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "git-branch": "^1.0.0",
+    "git-repo-name": "^1.0.1",
+    "jest": "^30.0.0",
+    "prettier": "^3.5.3",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.8.3"
+  }
+}

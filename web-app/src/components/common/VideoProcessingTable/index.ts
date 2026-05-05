@@ -1,0 +1,1 @@
+export { VideoProcessingTable, type VideoProcessingTableProps } from './VideoProcessingTable';

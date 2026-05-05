@@ -1,0 +1,17 @@
+/* Wider modal override for dual-player mode.
+   Applied to the Cloudscape Modal's className prop when DualPlayerPreview is in dual mode.
+   Uses the same selector pattern as .custom-modal in index.css. */
+
+@media (min-width: 1000px) {
+  .dual-player-modal div[class*="awsui_large_"] {
+    max-width: 1280px !important;
+    min-width: 1280px !important;
+  }
+}
+
+@media (max-width: 999px) {
+  .dual-player-modal div[class*="awsui_large_"] {
+    max-width: 95vw !important;
+    min-width: 95vw !important;
+  }
+}
