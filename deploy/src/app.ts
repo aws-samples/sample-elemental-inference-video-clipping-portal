@@ -23,7 +23,7 @@ import { suppressCdkNagRules } from "./cdk-nag-suppressions";
 // Custom config providers.
 const app = new cdk.App();
 
-const stackName = app.node.tryGetContext("stack_name") || "clip-portal";
+const stackName = app.node.tryGetContext("stack_name") || "sample-clipping-portal";
 const account =
     app.node.tryGetContext("account") ||
     process.env.CDK_DEPLOY_ACCOUNT ||

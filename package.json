@@ -1,5 +1,5 @@
 {
-  "name": "elemental-clipping-cropping",
+  "name": "sample-elemental-inference-video-clipping-portal",
   "version": "0.0.1",
   "scripts": {
     "start": "cd web-app && npm run start",

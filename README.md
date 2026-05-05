@@ -1,6 +1,6 @@
-# Elemental Clipping and Cropping
+# Sample Elemental Inference Video Clipping Portal
 
-A video clipping portal for live sports content, powered by AWS Elemental media services and AI-driven highlight detection.
+A video clipping portal for live sports content, powered by AWS Elemental Inference, in conjunction with other AWS Media Services for AI-driven smart-cropping and highlight detection.
 
 Operators can manage live video channels, automatically detect highlights from live streams, harvest and edit clips in both landscape and portrait orientations, and export finished MP4s for distribution.
 

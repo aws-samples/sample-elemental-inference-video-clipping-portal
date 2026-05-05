@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers how to use the Elemental Clipping and Cropping portal: managing channels, working with events and clips, editing video, and exporting content.
+This guide covers how to use the sample application: managing channels, working with events and clips, editing video, and exporting content.
 
 ## Table of Contents
 
