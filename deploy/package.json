@@ -24,7 +24,7 @@
     "aws-sdk": "^2.1692.0",
     "cdk-nag": "^2.36.15",
     "constructs": "^10.4.2",
-    "esbuild": "^0.21.5",
+    "esbuild": "0",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",

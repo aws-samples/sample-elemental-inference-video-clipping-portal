@@ -12,6 +12,6 @@
     "destroy": "cd deploy && npm run cdk destroy -- -c stack_name=\"${STACK_NAME:-}\" --all"
   },
   "devDependencies": {
-    "esbuild": "^0.21.5"
+    "esbuild": "0"
   }
 }
