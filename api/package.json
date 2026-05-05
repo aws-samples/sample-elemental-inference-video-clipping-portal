@@ -21,14 +21,12 @@
     "@aws-sdk/client-sqs": "^3.922.0",
     "@aws-sdk/lib-dynamodb": "^3.0.0",
     "@aws-sdk/s3-request-presigner": "^3.0.0",
-    "fluent-ffmpeg": "^2.1.2",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.0",
-    "@types/fluent-ffmpeg": "^2.1.24",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@types/uuid": "^9.0.0",
