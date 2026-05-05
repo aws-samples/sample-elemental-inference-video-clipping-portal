@@ -4,6 +4,15 @@ dist/
 tmp/
 temp/
 
+# Stray frontend build artifacts at repo root (Vite/Rollup hashed bundles).
+# The web-app builds to web-app/dist, but bundles occasionally get copied
+# or extracted outside that folder; block them at the root.
+/index-*.js
+/index-*.css
+/index-*.js.map
+/index-*.css.map
+/assets/
+
 # Compiled source
 *.com
 *.class
