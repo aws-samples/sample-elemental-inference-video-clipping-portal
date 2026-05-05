@@ -6,28 +6,17 @@ Operators can manage live video channels, automatically detect highlights from l
 
 ## How It Works
 
-```
-Live Video → MediaLive → MediaPackage V2 → Inference AI (highlight detection)
-                                                  ↓
-                                          EventBridge event
-                                                  ↓
-                                     Harvest Pipeline (Step Functions)
-                                          ↓              ↓
-                                    Landscape HLS    Portrait HLS
-                                          ↓              ↓
-                                     Clip stored in S3 + DynamoDB
-                                                  ↓
-                                     Web App (edit, trim, split)
-                                                  ↓
-                                     MediaConvert transcode → MP4 download
-```
+![Architecture](screenshots/architecture.png)
 
-1. A MediaLive channel ingests a video source and streams it through MediaPackage V2
-2. AWS Elemental Inference analyzes the stream and emits EventBridge events when highlights are detected (goals, saves, touchdowns, etc.)
-3. The harvest pipeline automatically creates MediaPackage V2 harvest jobs to capture the clip in both landscape (1920×1080) and portrait (1080×1920) orientations
-4. Harvested HLS segments are stored in S3 and clip metadata is tracked in DynamoDB
-5. Operators use the web application to review, edit (trim, split, delete sections), and process clips
-6. The download workflow transcodes HLS to MP4 via MediaConvert and provides presigned download URLs
+1. [AWS Elemental MediaLive](https://aws.amazon.com/medialive/) sends the incoming video stream to an associated [AWS Elemental Inference](https://aws.amazon.com/elemental-inference/) feed.
+2. Elemental Inference analyses the video for both smart cropping and event clipping.
+3. The smart cropping feature determines key areas of interest. Inference returns the desired cropping coordinates back to the MediaLive channel.
+4. MediaLive uses these coordinates to encode a vertical (portrait) aspect ratio version of the input. It pushes this output, along with other defined resolutions, to [AWS Elemental MediaPackage](https://aws.amazon.com/mediapackage/).
+5. MediaPackage acts as the just-in-time packager (JITP) and serves as the origin for live content.
+6. Inference detects key moments and sends timing details via [Amazon EventBridge](https://aws.amazon.com/eventbridge/).
+7. The demo clipping portal displays these key moments and allows operators to choose and modify which ones to publish. Selected highlights are processed via an [AWS Step Functions](https://aws.amazon.com/step-functions/) state machine, which triggers MediaPackage harvest jobs.
+8. Harvested content is processed by AWS Elemental MediaConvert to create frame-accurate MP4 and/or HLS VOD assets. These assets are stored in [Amazon S3](https://aws.amazon.com/s3/).
+9. An [Amazon CloudFront](https://aws.amazon.com/cloudfront/) distribution is configured with the S3 bucket and MediaPackage channel as origins, serving a combination of live and VOD content to viewers.
 
 ## Tech Stack
 
