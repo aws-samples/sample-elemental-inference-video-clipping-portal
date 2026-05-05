@@ -101,6 +101,9 @@ export const suppressCdkNagRules = (stack: cdk.Stack) => {
                     {
                         regex: "/^Resource::arn:aws:mediaconvert:[^:]+:[^:]+:jobs/\\*$/",
                     }, // Job IDs are dynamically generated and cannot be predicted
+                    {
+                        regex: "/^Resource::arn:aws:mediaconvert:[^:]+:[^:]+:queues/\\*$/",
+                    }, // MediaConvert queue names are environment-specific; scoped to account and region
                     "Resource::arn:aws:logs:us-east-1:<AWS::AccountId>:log-group:/aws/mediapackagev2/*",
                     "Resource::arn:aws:cloudwatch:us-east-1:<AWS::AccountId>:*",
                     "Resource::arn:aws:logs:us-east-1:<AWS::AccountId>:*",
