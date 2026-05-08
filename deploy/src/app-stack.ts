@@ -166,13 +166,17 @@ export class AppStack extends cdk.Stack {
         });
 
         // Set S3 CORS to restrict origins to the CloudFront domain (and localhost for local dev)
+        // @secure_recommendation: Restrict cross-origin access to CloudFront-fronted domains and localhost dev
+        // only; avoid wildcard (*). We use https://*.cloudfront.net instead of referencing the distribution's
+        // DomainName attribute to break a CloudFormation circular dependency between the bucket (CORS origin
+        // references distribution) and the distribution (bucket is an OAC origin).
         const cfnBucket = videoAssetsBucket.node.defaultChild as cdk.aws_s3.CfnBucket;
         cfnBucket.corsConfiguration = {
             corsRules: [
                 {
                     allowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
                     allowedOrigins: [
-                        `https://${website.cloudFrontDistribution.distributionDomainName}`,
+                        "https://*.cloudfront.net",
                         "http://localhost:5173",
                     ],
                     allowedHeaders: ["*"],
