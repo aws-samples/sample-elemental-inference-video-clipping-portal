@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+- Resolved all npm audit vulnerabilities across web-app (44→0), api (29→0), and deploy (13→2)
+- Upgraded @byomakase/omakase-player to 0.25.3, removed vulnerable axios override
+- Removed unused git-repo-name dependency (prototype pollution vuln)
+- Upgraded CDK CLI to 2.1121.0 to match aws-cdk-lib 2.253.1 schema version
+
 ## 0.1.3
 
 - Resolved 42 of 44 npm audit vulnerabilities via `npm audit fix` (AWS SDK, Amplify, vite, rollup, uuid)
