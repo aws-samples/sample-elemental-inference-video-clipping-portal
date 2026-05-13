@@ -82,12 +82,14 @@ export class MediaLiveLambdaConstruct extends Construct {
         );
 
         // Grant Elemental Inference permissions to the Lambda execution role.
-        // MediaLive validates that the caller has elemental-inference:GetFeed when
-        // creating a channel with Inference features enabled.
+        // MediaLive validates that the caller has these permissions when creating
+        // or updating a channel with Inference features enabled.
         this.mediaLiveApiClientFunction.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
                 actions: [
+                    "elemental-inference:AssociateFeed",
+                    "elemental-inference:DisassociateFeed",
                     "elemental-inference:GetFeed",
                     "elemental-inference:ListFeeds",
                 ],
