@@ -1,5 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import fs from "fs";
+import path from "path";
+
+// Read version from VERSION file at project root
+const version = fs.readFileSync(path.resolve(__dirname, "../VERSION"), "utf-8").trim();
 
 // https://vite.dev/config/
 export default ( { mode }: any ) => {
@@ -15,7 +20,8 @@ export default ( { mode }: any ) => {
             ]
         },
         define: {
-            "process.env": {}
+            "process.env": {},
+            "__APP_VERSION__": JSON.stringify(version),
         },
 
         worker: {

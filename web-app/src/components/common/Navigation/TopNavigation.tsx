@@ -94,6 +94,11 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ user, signOut }) => {
                                     </Button>
                                 ) as any,
                             },
+                            {
+                                id: "version",
+                                text: `v${__APP_VERSION__}`,
+                                disabled: true,
+                            },
                         ],
                     },
                 ]}
