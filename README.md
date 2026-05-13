@@ -27,7 +27,7 @@ Operators can manage live video channels, automatically detect highlights from l
 | API | API Gateway v2 (HTTP) → Lambda (Python + TypeScript) |
 | Orchestration | Step Functions (ASL JSON) |
 | Video | MediaLive, MediaPackage V2, MediaConvert |
-| AI | AWS Elemental Inference (highlight detection) |
+| AI | AWS Elemental Inference (smart-cropping and clipping) |
 | Storage | S3 (video assets), DynamoDB (metadata) |
 | CDN | CloudFront + WAFv2 |
 | Infrastructure | AWS CDK v2 (TypeScript), cdk-nag compliance |

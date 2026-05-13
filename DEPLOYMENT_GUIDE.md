@@ -20,19 +20,23 @@ cd web-app && npm install && cd ..
 
 ## 2. Bootstrap CDK
 
-Required once per account/region combination. The application deploys two stacks: the main app stack in your target region and a WAF stack in us-east-1 (required for CloudFront).
+Required once per account/region combination. The application deploys two stacks:
 
-If deploying to us-east-1:
+1. **WAF stack** — always deployed to **us-east-1** (AWS requires CloudFront-associated WAF WebACLs to reside in us-east-1, regardless of where the rest of your infrastructure lives).
+2. **App stack** — deployed to your chosen target region.
+
+If your target region is us-east-1, a single bootstrap covers both stacks:
 
 ```bash
 npm run deploy.bootstrap
 ```
 
-If deploying to any other region (e.g., us-west-2), bootstrap both regions:
+If your target region is anything else (e.g., ap-southeast-2), you must bootstrap both us-east-1 (for the WAF stack) and your target region (for the app stack):
 
 ```bash
 cd deploy
-npx cdk bootstrap ${AWS_ACCOUNT}/us-east-1 ${AWS_ACCOUNT}/us-west-2 \
+npx cdk bootstrap ${AWS_ACCOUNT}/us-east-1 ${AWS_ACCOUNT}/ap-southeast-2 \
+  --qualifier sf2025 \
   --cloudformation-execution-policies "arn:aws:iam::aws:policy/PowerUserAccess,arn:aws:iam::aws:policy/IAMFullAccess"
 ```
 
@@ -52,37 +56,41 @@ npm run build.deploy   # CDK infrastructure
 
 ## 4. Deploy
 
-By default, the stack name is derived from your current git branch. Override with `STACK_NAME`:
+All deploy commands should be run from the **project root** (not from `deploy/`). The root `npm run deploy` script handles passing `--all` so both the WAF and app stacks are deployed together.
+
+By default, the app stack region is determined by your AWS CLI configuration (`AWS_DEFAULT_REGION` or the profile's region). The stack name is derived from your current git branch. Both can be overridden:
 
 ```bash
-# Deploy using git branch name
+# Deploy using defaults (git branch name, CLI region)
 npm run deploy
 
 # Deploy with a custom stack name
 STACK_NAME="my-stack" npm run deploy
+
+# Deploy into a specific region
+npm run deploy -- -c region=ap-southeast-2
+
+# Both overrides together
+STACK_NAME="my-stack" npm run deploy -- -c region=ap-southeast-2
 ```
 
-To deploy into a different region:
-
-```bash
-npm run deploy -- -c region=eu-west-1
-```
+> **Note:** The WAF stack always deploys to us-east-1 regardless of the region you specify. The `-c region=` flag only controls where the app stack is created.
 
 After deployment, note the CloudFront URL from the CDK outputs. This is the application URL.
 
 ## 5. Create a Cognito User
 
-The application uses Cognito for authentication. Create a user after deployment:
+The application uses Cognito for authentication. Users sign in with a **username** (not email). Create a user after deployment:
 
 ```bash
 aws cognito-idp admin-create-user \
   --user-pool-id <user-pool-id-from-cdk-outputs> \
-  --username <email> \
+  --username <username> \
   --user-attributes Name=email,Value=<email> Name=email_verified,Value=true \
   --temporary-password <temp-password>
 ```
 
-Sign in at the CloudFront URL. You'll be prompted to set a permanent password on first login.
+Sign in at the CloudFront URL using the username and temporary password. You'll be prompted to set a permanent password on first login.
 
 ## 6. Local Development
 
