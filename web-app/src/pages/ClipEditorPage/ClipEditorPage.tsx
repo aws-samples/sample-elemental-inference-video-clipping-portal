@@ -391,7 +391,7 @@ const ClipEditorPage: React.FC = () => {
                                 clipName={clip.name}
                                 videoSrc={clip.sourceKey || clip.sourceKeys?.landscape || clip.sourceKeys?.portrait}
                                 sourceKey={clip.sourceKey || clip.sourceKeys?.landscape || clip.sourceKeys?.portrait}
-                                initialStartTime={clip.startTime || 0}
+                                initialStartTime={clip.originalAssetId ? 0 : (clip.startTime || 0)}
                                 initialEndTime={undefined}
                                 onDiscard={handleDiscard}
                                 isProcessing={clip.status === "edit_in_progress"}

@@ -185,6 +185,17 @@ export class CloudFrontS3WebSiteConstruct extends Construct {
                 allowedMethods: cdk.aws_cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
                 viewerProtocolPolicy: cdk.aws_cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
             });
+            // Add behavior for edited clips (MediaConvert output)
+            cloudFrontDistribution.addBehavior("/edited/*", videoAssetsOrigin, {
+                cachePolicy: new cdk.aws_cloudfront.CachePolicy(this, "EditedClipsCachePolicy", {
+                    defaultTtl: cdk.Duration.hours(24),
+                    maxTtl: cdk.Duration.days(365),
+                    minTtl: cdk.Duration.seconds(0),
+                }),
+                allowedMethods: cdk.aws_cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+                viewerProtocolPolicy: cdk.aws_cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+            });
+
         }
 
         const amplifyConfig: any = {
