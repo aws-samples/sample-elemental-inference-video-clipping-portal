@@ -57,6 +57,9 @@ const appStack = new AppStack(app, stackName, {
 
 appStack.addDependency(cfWafStack);
 
+// Tag all resources across both stacks
+cdk.Tags.of(app).add("project", "sample-elemental-inference-portal");
+
 // Add Aws Solutions Checks and suppress rules
 cdk.Aspects.of(app).add(new AwsSolutionsChecks({ logIgnores: true }));
 suppressCdkNagRules(cfWafStack);

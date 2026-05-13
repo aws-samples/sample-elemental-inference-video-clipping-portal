@@ -41,8 +41,10 @@ export class CognitoWebNativeConstruct extends Construct {
         /* eslint-disable @typescript-eslint/no-unused-vars */
         props = { ...defaultProps, ...props };
 
+        const stack = cdk.Stack.of(this);
+
         const userPool = new cdk.aws_cognito.UserPool(this, "UserPool", {
-            userPoolName: "aws-highlights-maker-users",
+            userPoolName: `${stack.stackName}-users`,
             selfSignUpEnabled: false, // Prototype front-ends that are public to the internet should keep this value as false
             autoVerify: { email: true },
             userVerification: {
