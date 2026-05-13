@@ -81,8 +81,19 @@ export class MediaLiveLambdaConstruct extends Construct {
             }),
         );
 
-        // Grant Starfish API permissions (MediaLive service role needs these for feed association)
-        // Note: medialive-api-client Lambda does not call Inference directly — removed from Lambda role
+        // Grant Elemental Inference permissions to the Lambda execution role.
+        // MediaLive validates that the caller has elemental-inference:GetFeed when
+        // creating a channel with Inference features enabled.
+        this.mediaLiveApiClientFunction.addToRolePolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                    "elemental-inference:GetFeed",
+                    "elemental-inference:ListFeeds",
+                ],
+                resources: ["*"],
+            }),
+        );
 
         // Grant PassRole permission for MediaLive service role
         this.mediaLiveApiClientFunction.addToRolePolicy(
