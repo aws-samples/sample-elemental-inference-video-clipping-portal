@@ -100,6 +100,8 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed setup, deployment 
 
 See [USER_GUIDE.md](./USER_GUIDE.md) for the operator guide covering channel management, clip processing, video editing, and system settings.
 
+See [DATA_FLOW_DIAGRAM.md](./DATA_FLOW_DIAGRAM.md) for detailed data flow diagrams covering ingestion, AI processing, harvesting, editing, and export paths.
+
 ## Common Commands
 
 ```bash

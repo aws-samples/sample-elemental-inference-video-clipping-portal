@@ -97,6 +97,7 @@ cdk.out
 
 # Dev docs (internal notes, not shipped)
 DEV_DOCS/
+SECURITY_REVIEW.md
 
 # Conversation logs
 deploy_with_me

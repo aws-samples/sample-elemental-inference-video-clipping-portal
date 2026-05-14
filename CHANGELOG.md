@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.8
+
+- Added DATA_FLOW_DIAGRAM.md with 7 detailed data flows, storage summary, trust boundaries, and auth overview
+
+## 0.1.7
+
+- Added SECURITY_REVIEW.md with npm audit and cdk-nag (AwsSolutionsChecks) results for security review
+
 ## 0.1.6
 
 - Added evaluation/sample-use disclaimer to README introduction clarifying the project is not intended for production use
