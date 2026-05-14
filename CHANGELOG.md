@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Added evaluation/sample-use disclaimer to README introduction clarifying the project is not intended for production use
+
 ## 0.1.5
 
 - Comprehensive documentation review and update: added Navigation and User Preferences sections to USER_GUIDE.md, fixed API endpoint methods and paths, clarified UI vs API-only settings

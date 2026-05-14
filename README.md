@@ -2,9 +2,12 @@
 
 **Version:** 0.1.4
 
+> **Note:** This project is a sample application designed to accelerate evaluation of [AWS Elemental Inference](https://aws.amazon.com/elemental-inference/). It provides a ready-made environment for testing how Elemental Inference integrates into a video workflow and how it performs against your own content. It is not intended for production use.
+
 A video clipping portal for live sports content, powered by AWS Elemental Inference, in conjunction with other AWS Media Services for AI-driven smart-cropping and highlight detection.
 
 Operators can manage live video channels, automatically detect highlights from live streams, harvest and edit clips in both landscape and portrait orientations, and export finished MP4s for distribution.
+
 
 ## How It Works
 
