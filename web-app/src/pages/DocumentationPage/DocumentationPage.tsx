@@ -232,22 +232,21 @@ const sections = [
       <SpaceBetween size="m">
         <Box variant="h4">Preferences</Box>
         <Box variant="p">
-          User Preferences let you customize the application behavior to suit your workflow.
+          User Preferences are client-side settings that customize the application display for your browser. They are stored locally and do not affect other users.
         </Box>
         <ExpandableSection headerText="Accessing Preferences">
           <SpaceBetween size="s">
             <Box variant="p">Click your username in the top navigation bar and select <strong>Preferences</strong> from the dropdown menu.</Box>
           </SpaceBetween>
         </ExpandableSection>
-        <ExpandableSection headerText="Available Settings">
+        <ExpandableSection headerText="Available Preferences">
           <SpaceBetween size="s">
-            <Box variant="p">Preferences may include options such as:</Box>
             <ul>
-              <li>Default crop aspect ratio</li>
-              <li>Preferred video quality for previews</li>
-              <li>Notification preferences</li>
-              <li>Display density and layout options</li>
+              <li><strong>Dark mode</strong> — toggle between light and dark visual themes.</li>
+              <li><strong>Density</strong> — choose between Comfortable (more spacing) or Compact (denser layout) display modes.</li>
+              <li><strong>Demo mode</strong> — enables quick-schedule options during event creation for faster demonstrations.</li>
             </ul>
+            <Box variant="p">Preferences persist across browser sessions but are not synced between devices.</Box>
           </SpaceBetween>
         </ExpandableSection>
       </SpaceBetween>
@@ -260,21 +259,21 @@ const sections = [
       <SpaceBetween size="m">
         <Box variant="h4">System Settings</Box>
         <Box variant="p">
-          System Settings control application-wide configuration that affects all users.
+          System Settings control application-wide configuration that affects all users. These settings are stored server-side in DynamoDB.
         </Box>
         <ExpandableSection headerText="Accessing System Settings">
           <SpaceBetween size="s">
             <Box variant="p">Click your username in the top navigation bar and select <strong>System Settings</strong> from the dropdown menu.</Box>
           </SpaceBetween>
         </ExpandableSection>
-        <ExpandableSection headerText="Configuration Options">
+        <ExpandableSection headerText="Available Settings">
           <SpaceBetween size="s">
-            <Box variant="p">System Settings may include:</Box>
             <ul>
-              <li>Default AWS region and resource configuration</li>
-              <li>MediaLive and MediaPackage connection settings</li>
-              <li>Auto-harvest pipeline thresholds and rules</li>
-              <li>Storage and retention policies</li>
+              <li><strong>Auto-Harvest</strong> — when enabled, both landscape and portrait orientations are automatically harvested when highlights are detected.</li>
+              <li><strong>Harvest Buffer (seconds)</strong> — additional seconds of content added before and after each harvested clip (0–5). Useful for editing flexibility.</li>
+              <li><strong>Harvest Retention (days)</strong> — number of days to retain harvested clip content in S3 before automatic cleanup (1–365, default 30).</li>
+              <li><strong>Auto-Activate Inference</strong> — when enabled, events are automatically activated and deactivated for inference based on their scheduled start and end times.</li>
+              <li><strong>Conflict Resolution</strong> — choose how overlapping events on the same channel are handled: prefer running events or prefer the event with the latest start time.</li>
             </ul>
           </SpaceBetween>
         </ExpandableSection>

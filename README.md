@@ -1,5 +1,7 @@
 # Sample Elemental Inference Video Clipping Portal
 
+**Version:** 0.1.4
+
 A video clipping portal for live sports content, powered by AWS Elemental Inference, in conjunction with other AWS Media Services for AI-driven smart-cropping and highlight detection.
 
 Operators can manage live video channels, automatically detect highlights from live streams, harvest and edit clips in both landscape and portrait orientations, and export finished MP4s for distribution.
@@ -91,9 +93,9 @@ npm run deploy
 # Create a Cognito user, then open the CloudFront URL from CDK outputs
 ```
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed setup and deployment instructions.
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed setup, deployment instructions, and configuration management.
 
-See [USER_GUIDE.md](./USER_GUIDE.md) for the operator guide covering channel management, clip processing, video editing, and data handling.
+See [USER_GUIDE.md](./USER_GUIDE.md) for the operator guide covering channel management, clip processing, video editing, and system settings.
 
 ## Common Commands
 

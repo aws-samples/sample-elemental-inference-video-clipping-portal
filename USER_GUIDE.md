@@ -4,15 +4,48 @@ This guide covers how to use the sample application: managing channels, working 
 
 ## Table of Contents
 
+- [Application Navigation](#application-navigation)
 - [Concepts](#concepts)
 - [Channel Management](#channel-management)
 - [Event Management](#event-management)
 - [Clip Processing Pipeline](#clip-processing-pipeline)
 - [Video Editing](#video-editing)
 - [Downloading and Exporting](#downloading-and-exporting)
+- [User Preferences](#user-preferences)
 - [System Settings](#system-settings)
 - [Data Model Reference](#data-model-reference)
 - [S3 Storage Layout](#s3-storage-layout)
+
+---
+
+## Application Navigation
+
+The web application uses a two-level navigation structure.
+
+### Side Navigation
+
+The left-hand side navigation panel provides access to the main pages:
+
+| Item | Route | Description |
+|------|-------|-------------|
+| Events | `/` | Home page — manage events and view associated clips |
+| Channels | `/channels` | Create, start/stop, and delete MediaLive channels |
+| Video Editor | `/video-editor` | Clip editing with trim, split, and delete operations |
+| Documentation | `/docs` | In-app user guide |
+
+The side navigation can be collapsed on smaller screens.
+
+### Top Navigation (User Menu)
+
+The top-right user dropdown menu provides access to:
+
+| Item | Description |
+|------|-------------|
+| **Preferences** | Opens the Preferences modal (client-side display settings) |
+| **System Settings** | Opens the System Settings modal (server-side application configuration) |
+| **Documentation** | Navigates to the in-app documentation page |
+| **Sign out** | Ends the current session |
+| **Version** | Displays the current application version (read-only) |
 
 ---
 
@@ -288,17 +321,42 @@ If a clip already has an `mp4Key` (from a previous processing job), the system c
 
 ---
 
+## User Preferences
+
+User Preferences are client-side settings stored in the browser's localStorage. They affect only the current user's display and do not impact other users or backend behavior.
+
+Access Preferences by clicking your username in the top navigation bar and selecting **Preferences**.
+
+| Preference | Type | Default | Description |
+|------------|------|---------|-------------|
+| Dark mode | toggle | Off | Switches between light and dark visual themes |
+| Density | select | Comfortable | Controls UI information density. Options: `Comfortable` (more spacing) or `Compact` (denser layout) |
+| Demo mode | toggle | Off | Enables quick-schedule options during event creation for faster demos |
+
+Preferences persist across browser sessions but are not synced between devices.
+
+---
+
 ## System Settings
 
-Configurable via the Settings page or the `/api/settings/{key}` API endpoint.
+Configurable via the Settings modal (accessible from the user menu) or the `/api/settings/{key}` API endpoint.
+
+### Settings Available in the UI
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `autoHarvest` | boolean | `false` | Automatically harvest clips when highlights are detected |
 | `harvestBufferSeconds` | integer (0–5) | `0` | Seconds of padding added before/after detected moments |
+| `harvestRetentionDays` | integer (1–365) | `30` | Days to retain harvest job records before cleanup |
 | `autoActivateInference` | boolean | `false` | Automatically activate Inference when an event's start time arrives |
 | `autoActivateConflictResolution` | enum | `prefer_running` | How to resolve conflicts when multiple events share a channel. Options: `prefer_running`, `prefer_latest_start` |
-| `harvestRetentionDays` | integer | `30` | Days to retain harvest job records before cleanup |
+
+### API-Only Settings
+
+The following settings are managed via the API (`PUT /api/settings/{key}`) and are not exposed in the UI:
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
 | `harvestCleanupDryRun` | boolean | `true` | Preview cleanup without deleting (set to `false` to enable actual deletion) |
 
 Settings are stored in the SystemSettings DynamoDB table and seeded with defaults on first deployment (existing values are never overwritten).
@@ -381,28 +439,68 @@ videoAssetsBucket/
 
 All API routes are served through API Gateway v2 behind CloudFront at `/api/`.
 
+### Events
+
 | Method | Path | Description |
 |--------|------|-------------|
 | GET/POST | `/api/events` | List or create events |
 | GET/PUT/DELETE | `/api/events/{id}` | Get, update, or delete an event |
-| POST | `/api/events/{id}/activate` | Enable Inference for an event |
-| POST | `/api/events/{id}/deactivate` | Disable Inference for an event |
-| GET/POST | `/api/clips` | List or create clips |
+| PUT | `/api/events/{id}/activate` | Enable Inference for an event |
+| PUT | `/api/events/{id}/deactivate` | Disable Inference for an event |
+
+### Clips
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST/PUT/DELETE | `/api/clips` | List, create, update, or delete clips |
 | GET | `/api/clips?eventId={id}` | List clips for a specific event |
 | GET/PUT/DELETE | `/api/clips/{id}` | Get, update, or delete a clip |
+
+### Channels
+
+| Method | Path | Description |
+|--------|------|-------------|
 | GET/POST | `/api/channels` | List or create channels |
 | GET/DELETE | `/api/channels/{id}` | Get or delete a channel |
-| GET | `/api/channels/{id}/status` | Get MediaLive channel state |
-| POST | `/api/channels/{id}/start` | Start a channel |
-| POST | `/api/channels/{id}/stop` | Stop a channel |
+| GET | `/api/channels/status/{executionArn}` | Get channel creation/deletion state machine status |
+
+### MediaLive
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/medialive/channels/{channelId}/status` | Get MediaLive channel state |
+| POST | `/api/medialive/channels/{channelId}/start` | Start a MediaLive channel |
+| POST | `/api/medialive/channels/{channelId}/stop` | Stop a MediaLive channel |
+| GET | `/api/medialive/channels/{channelId}/thumbnail` | Get channel thumbnail |
+
+### Downloads
+
+| Method | Path | Description |
+|--------|------|-------------|
 | POST | `/api/download-clips` | Create download jobs (up to 20 items) |
 | GET | `/api/download-clips/{jobId}` | Get download job status + presigned URLs |
 | POST | `/api/download-clips/presign` | Get presigned URL for an S3 key |
-| GET/PUT | `/api/settings/{settingKey}` | Read or update a system setting |
-| GET/POST | `/api/templates` | List or create templates |
-| GET/PUT/DELETE | `/api/templates/{id}` | Get, update, or delete a template |
+
+### Processing Jobs
+
+| Method | Path | Description |
+|--------|------|-------------|
 | GET/POST | `/api/jobs` | List or create processing jobs |
-| GET | `/api/jobs/{id}` | Get processing job status |
+| GET/PUT/DELETE | `/api/jobs/{jobId}` | Get, update, or delete a processing job |
+| GET | `/api/jobs/{jobId}/status` | Get processing job status |
+
+### Templates
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST/PUT/DELETE | `/api/templates` | List, create, update, or delete templates |
+| GET/PUT/DELETE | `/api/templates/{id}` | Get, update, or delete a template |
+
+### System Settings
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/PUT | `/api/settings/{settingKey}` | Read or update a system setting |
 
 ---
 

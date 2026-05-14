@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Comprehensive documentation review and update: added Navigation and User Preferences sections to USER_GUIDE.md, fixed API endpoint methods and paths, clarified UI vs API-only settings
+- Consolidated web-app/CONFIG_MANAGEMENT.md into DEPLOYMENT_GUIDE.md for better discoverability
+- Updated in-app DocumentationPage to reflect actual Preferences and System Settings functionality
+
 ## 0.1.4
 
 - Resolved all npm audit vulnerabilities across web-app (44→0), api (29→0), and deploy (13→2)

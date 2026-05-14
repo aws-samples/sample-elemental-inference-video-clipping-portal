@@ -129,6 +129,91 @@ cd deploy && npm test
 cd api/src/harvest-pipeline-python && python -m pytest
 ```
 
+## 7. Configuration Management
+
+The web application requires an Amplify configuration file (`config.json`) to connect to AWS services (Cognito, API Gateway, S3). This configuration is deployment-specific and not checked into git.
+
+### How Configuration Works
+
+**In production:** The config is deployed to CloudFront by CDK during deployment via the `AmplifyConfigBucketConstruct`. The app fetches it at runtime from `/config.json`.
+
+**In local development:** Vite's dev server proxies `/config.json` requests to CloudFront using the `VITE_CLOUDFRONT_URL` from your `.env` file.
+
+### Configuration Files
+
+| File | Purpose | Git-tracked |
+|------|---------|-------------|
+| `web-app/public/config.json` | Active deployment config | No (gitignored) |
+| `web-app/public/config.local.json` | Local backup of last known config | Yes |
+| `web-app/.env` | Environment variables including `VITE_CLOUDFRONT_URL` | No |
+
+### Recovering Lost Configuration
+
+If you switch branches and lose your `config.json`:
+
+**Option 1: Fetch from CloudFront (recommended)**
+```bash
+./scripts/fetch-config.sh [stack-name]
+```
+
+This queries your CDK stack for the CloudFront URL, downloads config.json, and saves it to `web-app/public/config.json`.
+
+**Option 2: Copy from local backup**
+```bash
+cp web-app/public/config.local.json web-app/public/config.json
+```
+
+**Option 3: Manual retrieval via AWS CLI**
+```bash
+# Get CloudFront URL from stack outputs
+aws cloudformation describe-stacks \
+  --stack-name elemental-clip-portal \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionUrl'].OutputValue" \
+  --output text
+
+# Fetch config
+curl https://YOUR_CLOUDFRONT_URL/config.json -o web-app/public/config.json
+```
+
+### Keeping config.local.json Updated
+
+Whenever you redeploy and the config changes:
+```bash
+cp web-app/public/config.json web-app/public/config.local.json
+git add web-app/public/config.local.json
+git commit -m "Update local config backup"
+```
+
+### Configuration Structure
+
+The config file contains:
+
+```json
+{
+  "Auth": {
+    "Cognito": {
+      "userPoolId": "us-west-2_XXXXXXXXX",
+      "userPoolClientId": "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "identityPoolId": "us-west-2:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    }
+  },
+  "API": {
+    "REST": {
+      "api": {
+        "endpoint": "./api",
+        "region": "us-west-2"
+      }
+    }
+  },
+  "Storage": {
+    "S3": {
+      "bucket": "your-bucket-name",
+      "region": "us-west-2"
+    }
+  }
+}
+```
+
 ## Stack Architecture
 
 The deployment creates two CloudFormation stacks:
@@ -189,3 +274,17 @@ node --version
 
 ### Cross-Platform Notes
 The build system uses Python's `subprocess` module. On Windows, `shutil.which()` is used to locate executables since `PATH` isn't always passed to subprocesses.
+
+### "Failed to load application configuration"
+
+1. Check if `VITE_CLOUDFRONT_URL` is set in `web-app/.env`
+2. Verify CloudFront is accessible: `curl https://YOUR_CLOUDFRONT_URL/config.json`
+3. Check Vite proxy configuration in `web-app/vite.config.ts`
+4. Restore from backup: `cp web-app/public/config.local.json web-app/public/config.json`
+
+### Config Outdated After Redeployment
+
+Run the fetch script to get the latest config:
+```bash
+./scripts/fetch-config.sh
+```
