@@ -108,7 +108,7 @@ Use the **Start** / **Stop** buttons on the Channels page. A running channel is 
 
 ### Deleting a Channel
 
-Deletion is also orchestrated by a Step Functions state machine that tears down all associated MediaLive, MediaPackage, and Inference resources.
+Deletion is also orchestrated by a Step Functions state machine that tears down all associated MediaLive Channel, MediaPackage Channel, and Inference Feed.
 
 ---
 
@@ -509,8 +509,6 @@ All API routes are served through API Gateway v2 behind CloudFront at `/api/`.
 | Sport | Detected Moments |
 |-------|-----------------|
 | Soccer | Goals, Saves, Celebrations, Fouls |
-| Football | Touchdowns, Field Goals, Interceptions |
 | Basketball | Shots, Dunks, Free Throws |
-| Baseball | Home Runs, Strikes, Hits |
 
 The sport type is configured per event and determines which Inference model is used for highlight detection.
