@@ -39,4 +39,5 @@ RUN echo "require('ts-node/register'); const { handler } = require('./src/reel-p
 RUN echo "require('ts-node/register'); const { handler } = require('./src/download-processing/index.ts'); module.exports = { handler };" > download-processing.js
 
 # Default to video processor (can be overridden with CMD in CDK)
+#checkov:skip=CKV_DOCKER_3:AWS Lambda base images manage user context internally; the runtime executes as non-root regardless of Dockerfile USER directive
 CMD ["video-processor.handler"]

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.10
+
+- Added CKV_DOCKER_3 checkov suppression with justification to api/Dockerfile (Lambda base images manage user context internally)
+- Removed unused pre-built medialive-client-layer zip files from deploy/assets (native boto3 SDK is sufficient)
+
+## 0.1.9
+
+- Generated comprehensive threat model using STRIDE methodology (9 threats, 9 mitigations, 14 components)
+- Exported to .threatmodel/threat-model.json (Threat Composer compatible) and .threatmodel/threat-model.md
+
 ## 0.1.8
 
 - Added DATA_FLOW_DIAGRAM.md with 7 detailed data flows, storage summary, trust boundaries, and auth overview

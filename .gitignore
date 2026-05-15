@@ -98,12 +98,10 @@ cdk.out
 # Dev docs (internal notes, not shipped)
 DEV_DOCS/
 SECURITY_REVIEW.md
+.threatmodel/
 
 # Conversation logs
 deploy_with_me
-
-# ALLOWED assets that are runtime dependencies
-!deploy/assets/*.zip
 
 # Scripts
 .scripts/
