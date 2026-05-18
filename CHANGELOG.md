@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+- First public release candidate
+- Full documentation suite: README, Deployment Guide, User Guide, Data Flow Diagram
+- Security review complete: cdk-nag compliant, npm audit clean, ASH scan findings resolved
+
 ## 0.1.10
 
 - Added CKV_DOCKER_3 checkov suppression with justification to api/Dockerfile (Lambda base images manage user context internally)

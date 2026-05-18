@@ -1,6 +1,6 @@
 # Sample Elemental Inference Video Clipping Portal
 
-**Version:** 0.1.4
+**Version:** 1.0.0
 
 > **Note:** This project is a sample application designed to accelerate evaluation of [AWS Elemental Inference](https://aws.amazon.com/elemental-inference/). It provides a ready-made environment for testing how Elemental Inference integrates into a video workflow and how it performs against your own content. It is not intended for production use.
 
