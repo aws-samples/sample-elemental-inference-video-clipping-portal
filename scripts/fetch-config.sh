@@ -4,12 +4,15 @@
 # Usage: ./scripts/fetch-config.sh [stack-name] [aws-profile]
 # Examples:
 #   ./scripts/fetch-config.sh
-#   ./scripts/fetch-config.sh elemental-clip-portal
-#   ./scripts/fetch-config.sh elemental-clip-portal demo-dev
+#   ./scripts/fetch-config.sh sample-clipping-portal
+#   ./scripts/fetch-config.sh my-stack demo-dev
+#
+# The stack name defaults to STACK_NAME env var if set, otherwise to
+# "sample-clipping-portal" (matches the default in deploy/src/app.ts).
 
 set -e
 
-STACK_NAME="${1:-elemental-clip-portal}"
+STACK_NAME="${1:-${STACK_NAME:-sample-clipping-portal}}"
 AWS_PROFILE="${2:-${AWS_PROFILE}}"
 OUTPUT_FILE="web-app/public/config.json"
 

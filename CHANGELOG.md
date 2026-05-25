@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.2
+
+- Made DEPLOYMENT_GUIDE.md Section 6 (Local Development) consistent: all three steps now run from the project root (no more `cd web-app` hops)
+
+## 1.0.1
+
+- Fixed `scripts/fetch-config.sh` default stack name to match the CDK app default (`sample-clipping-portal`) and added `STACK_NAME` env var fallback
+- Rewrote DEPLOYMENT_GUIDE.md Section 6 (Local Development) to document the required `web-app/public/config.json` step and explain why `VITE_CLOUDFRONT_URL` alone causes a `JSON.parse` error
+- Corrected DEPLOYMENT_GUIDE.md Section 4 stack name guidance and updated Section 7's manual `aws cloudformation describe-stacks` example
+
 ## 1.0.0
 
 - First public release candidate

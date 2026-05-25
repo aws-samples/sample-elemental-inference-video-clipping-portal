@@ -58,10 +58,10 @@ npm run build.deploy   # CDK infrastructure
 
 All deploy commands should be run from the **project root** (not from `deploy/`). The root `npm run deploy` script handles passing `--all` so both the WAF and app stacks are deployed together.
 
-By default, the app stack region is determined by your AWS CLI configuration (`AWS_DEFAULT_REGION` or the profile's region). The stack name is derived from your current git branch. Both can be overridden:
+By default, the app stack region is determined by your AWS CLI configuration (`AWS_DEFAULT_REGION` or the profile's region). The stack name defaults to `sample-clipping-portal` (defined in `deploy/src/app.ts`) and can be overridden via the `STACK_NAME` env var. Both can be overridden:
 
 ```bash
-# Deploy using defaults (git branch name, CLI region)
+# Deploy using defaults (stack name "sample-clipping-portal", CLI region)
 npm run deploy
 
 # Deploy with a custom stack name
@@ -96,25 +96,63 @@ Sign in at the CloudFront URL using the username and temporary password. You'll 
 
 ### Frontend Dev Server
 
+The web app needs two things to run locally against your deployed AWS resources:
+
+1. **`web-app/.env.local`** — sets `VITE_CLOUDFRONT_URL`, used by Vite to proxy `/api` requests to your deployed CloudFront distribution.
+2. **`web-app/public/config.json`** — the Amplify config (Cognito IDs, S3 bucket, API endpoint). The app fetches this from `/config.json` at startup. It is gitignored because it is deployment-specific.
+
+#### Step 1: Create `.env.local`
+
+From the project root:
+
 ```bash
-cd web-app
-cp .env.example .env.local
+cp web-app/.env.example web-app/.env.local
 ```
 
-Edit `.env.local` and set your CloudFront URL:
+Edit `web-app/.env.local` and set your CloudFront URL (from CDK outputs after deployment):
 
 ```
 VITE_CLOUDFRONT_URL=https://your-cloudfront-id.cloudfront.net
 ```
 
-Then start the dev server:
+#### Step 2: Fetch `config.json` from your deployed stack
+
+From the project root, run:
 
 ```bash
-cd web-app
+./scripts/fetch-config.sh
+```
+
+This queries CloudFormation for your stack's CloudFront URL, downloads `config.json`, and writes it to `web-app/public/config.json`.
+
+If your stack name is not the default (`sample-clipping-portal`), pass it as the first argument:
+
+```bash
+./scripts/fetch-config.sh my-stack-name
+./scripts/fetch-config.sh my-stack-name my-aws-profile   # also pass an AWS profile
+```
+
+To find your stack name:
+
+```bash
+aws cloudformation list-stacks \
+  --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+  --query "StackSummaries[].StackName" --output table
+```
+
+Look for the entry that does **not** end in `-waf` (the `-waf` stack is just the WebACL in us-east-1).
+
+#### Step 3: Start the dev server
+
+From the project root:
+
+```bash
 npm start
 ```
 
-The app runs at `http://localhost:5173` with API requests proxied to your deployed CloudFront distribution.
+The app runs at `http://localhost:5173`. API requests are proxied to your CloudFront distribution, and `config.json` is served by Vite from `web-app/public/`.
+
+> **Note:** Setting `VITE_CLOUDFRONT_URL` alone is not enough. The dev server only proxies `/api` and `/proxy-video`, not `/config.json`, so without a local `config.json` the app fails to start with `JSON.parse: unexpected character at line 1 column 1` (Vite returns `index.html` as the SPA fallback).
 
 ### Running Tests
 
@@ -165,10 +203,10 @@ cp web-app/public/config.local.json web-app/public/config.json
 
 **Option 3: Manual retrieval via AWS CLI**
 ```bash
-# Get CloudFront URL from stack outputs
+# Get CloudFront URL from stack outputs (replace with your stack name)
 aws cloudformation describe-stacks \
-  --stack-name elemental-clip-portal \
-  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionUrl'].OutputValue" \
+  --stack-name sample-clipping-portal \
+  --query "Stacks[0].Outputs[?contains(OutputKey, 'CloudFrontDistributionUrl')].OutputValue | [0]" \
   --output text
 
 # Fetch config
