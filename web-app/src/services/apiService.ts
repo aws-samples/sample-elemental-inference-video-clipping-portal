@@ -19,9 +19,9 @@ export class ApiService {
     private isDevelopment: boolean;
 
     private constructor() {
-        this.baseUrl = process.env.VITE_API_BASE_URL || "/api";
-        this.isDevelopment = process.env.VITE_DEV_MODE
-            ? process.env.VITE_DEV_MODE === "true"
+        this.baseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
+        this.isDevelopment = import.meta.env.VITE_DEV_MODE
+            ? import.meta.env.VITE_DEV_MODE === "true"
             : true;
     }
 
