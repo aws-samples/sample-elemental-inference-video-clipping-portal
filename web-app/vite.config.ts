@@ -9,6 +9,16 @@ const version = fs.readFileSync(path.resolve(__dirname, "../VERSION"), "utf-8").
 // https://vite.dev/config/
 export default ( { mode }: any ) => {
     process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+
+    const cloudfrontUrl = process.env.VITE_CLOUDFRONT_URL;
+    if (!cloudfrontUrl) {
+        throw new Error(
+            "VITE_CLOUDFRONT_URL is not set. Create web-app/.env.local from .env.example " +
+            "and set VITE_CLOUDFRONT_URL to your deployed CloudFront URL. " +
+            "See DEPLOYMENT_GUIDE.md Section 6 for details."
+        );
+    }
+
     return defineConfig({
         plugins: [react()],
         resolve: {
@@ -42,7 +52,7 @@ export default ( { mode }: any ) => {
             proxy: {
                 // Proxy API calls to CloudFront
                 "/api": {
-                    target: process.env.VITE_CLOUDFRONT_URL || "https://d2ou9afi54n0k6.cloudfront.net",
+                    target: cloudfrontUrl,
                     changeOrigin: true,
                     secure: false,
                     rewrite: (path) => path, // Keep the /api prefix

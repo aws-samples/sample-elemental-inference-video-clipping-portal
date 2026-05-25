@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- `web-app/vite.config.ts` now throws a clear error at startup when `VITE_CLOUDFRONT_URL` is missing, replacing a silent fallback to a non-existent hardcoded CloudFront domain that caused `/api/*` requests to return Vite's HTML SPA fallback
+- `web-app/src/services/apiService.ts` switched from `process.env.VITE_*` to `import.meta.env.VITE_*` for proper Vite-native env var access
+
 ## 1.0.2
 
 - Made DEPLOYMENT_GUIDE.md Section 6 (Local Development) consistent: all three steps now run from the project root (no more `cd web-app` hops)
