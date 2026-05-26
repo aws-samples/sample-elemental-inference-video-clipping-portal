@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+
+- Added `elemental-inference:PutMedia` to the MediaLive service role and API client Lambda role — this is the runtime call MediaLive uses to push encoded video frames into the Starfish inference feed (paired with the existing `GetMetadata` permission for reading inference results)
+
 ## 1.0.7
 
 - Fixed `npm run deploy` failing from inside `deploy/` with "specify which stacks to use or specify --all" — the script now passes `--all` and forwards the `STACK_NAME` env var as CDK context, matching the root-level deploy script

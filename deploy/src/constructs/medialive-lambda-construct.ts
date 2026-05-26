@@ -93,6 +93,7 @@ export class MediaLiveLambdaConstruct extends Construct {
                     "elemental-inference:GetFeed",
                     "elemental-inference:GetMetadata",
                     "elemental-inference:ListFeeds",
+                    "elemental-inference:PutMedia",
                 ],
                 resources: ["*"],
             }),
@@ -191,8 +192,9 @@ export class MediaLiveLambdaConstruct extends Construct {
         // Elemental Inference permissions used by MediaLive when the channel runs
         // with InferenceSettings. GetMetadata is the runtime call MediaLive makes
         // against the Starfish feed for each StarfishOutputs entry on a video
-        // description; the Associate/Disassociate/Get/List calls are made when the
-        // channel is created, updated, started, and torn down.
+        // description; PutMedia is the runtime call MediaLive makes to send video
+        // frames to the feed; the Associate/Disassociate/Get/List calls are made
+        // when the channel is created, updated, started, and torn down.
         role.addToPolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -202,6 +204,7 @@ export class MediaLiveLambdaConstruct extends Construct {
                     "elemental-inference:GetFeed",
                     "elemental-inference:GetMetadata",
                     "elemental-inference:ListFeeds",
+                    "elemental-inference:PutMedia",
                 ],
                 resources: ["*"],
             }),
