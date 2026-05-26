@@ -168,8 +168,30 @@
               }
             },
             "ResultPath": null,
+            "Next": "PromoteClipStatusToArchived",
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "PromoteClipStatusToArchived" }]
+          },
+          "PromoteClipStatusToArchived": {
+            "Type": "Task",
+            "Comment": "Mark the clip as archived now that at least one orientation has been harvested. Only promotes from pre-harvest statuses (detected, original, processing, failed) so subsequent edit states (modified, reviewed, published, etc.) are not overwritten. ConditionalCheckFailedException is treated as a no-op.",
+            "Resource": "arn:aws:states:::dynamodb:updateItem",
+            "Parameters": {
+              "TableName": "${ClipsTableName}",
+              "Key": { "id": { "S.$": "$.clipId" } },
+              "UpdateExpression": "SET #s = :archived",
+              "ConditionExpression": "attribute_not_exists(#s) OR #s = :detected OR #s = :original OR #s = :processing OR #s = :failed",
+              "ExpressionAttributeNames": { "#s": "status" },
+              "ExpressionAttributeValues": {
+                ":archived": { "S": "archived" },
+                ":detected": { "S": "detected" },
+                ":original": { "S": "original" },
+                ":processing": { "S": "processing" },
+                ":failed": { "S": "failed" }
+              }
+            },
+            "ResultPath": null,
             "Next": "UseHarvestedPrefix",
-            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "UseHarvestedPrefix" }]
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "UseHarvestedPrefix" }]
           },
           "UseHarvestedPrefix": {
             "Type": "Pass",

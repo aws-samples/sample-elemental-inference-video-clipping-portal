@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.9
+
+- Fixed clip Harvest Status column staying on "Pending" after manual prepare-download: the download workflow now promotes `clip.status` from a pre-harvest state (`detected`/`original`/`processing`/`failed`) to `archived` once a harvest branch completes, mirroring what auto-harvest already does via `harvest-validate`'s `finalize_auto_harvest` action
+- The new `PromoteClipStatusToArchived` state uses a DynamoDB ConditionExpression so it never overwrites later-stage statuses like `modified`, `reviewed`, or `published`, and any failure (including the conditional check) falls through to the next state safely
+
 ## 1.0.8
 
 - Added `elemental-inference:PutMedia` to the MediaLive service role and API client Lambda role — this is the runtime call MediaLive uses to push encoded video frames into the Starfish inference feed (paired with the existing `GetMetadata` permission for reading inference results)
