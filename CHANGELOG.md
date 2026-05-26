@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+- Fixed clip harvest status display: DynamoDB String Set attributes (e.g. `harvestedOrientations` written by the harvest state machine) were being unmarshalled as JS `Set` instances and serialized by `JSON.stringify` as `{}`, so the UI never saw harvested orientations after a prepare-download flow
+- Added `api/src/shared/dynamodb-json.ts` with a reusable `jsonReplacer` / `stringifyForApi` helper that converts `Set` instances to arrays during serialization
+- Wired `stringifyForApi` into the `createResponse` helper of `clips`, `events`, `templates`, `system-settings`, and `jobs-api` Lambdas so any future Set-typed attributes serialize correctly
+
 ## 1.0.4
 
 - Removed unused permissions from the MediaLive service role and API client Lambda role: `mediapackage:*` (v1), `mediastore:*`, `mediaconnect:Managed*`, and the `ec2:*` networking block — none of these match the channel configuration produced by `create-channel.asl.json`

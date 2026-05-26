@@ -27,6 +27,7 @@ import {
     BatchWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import { stringifyForApi } from "../shared/dynamodb-json";
 
 // Initialize AWS Lambda Powertools for observability
 const logger = new Logger();
@@ -691,6 +692,6 @@ function createResponse(statusCode: number, body: any): APIGatewayProxyResult {
                 "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
             "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         },
-        body: JSON.stringify(body),
+        body: stringifyForApi(body),
     };
 }
