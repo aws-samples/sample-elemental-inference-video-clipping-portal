@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6
+
+- Fixed orphaned MediaLive inputs after channel deletion: the DeleteChannel state machine now polls DescribeChannel until the channel is fully deleted (or 3-minute cap) before attempting DeleteInput, instead of racing the asynchronous DeleteChannel and hitting `Input <id> is busy, it cannot be deleted`
+- Added a distinct `InputBusyError` exception class in the MediaLive API client Lambda; the handler re-raises it so the state machine can apply a targeted `Retry` (4 attempts, 15s base, 1.5x backoff) as a backstop on `DeleteMediaLiveInput`
+- Made `describe_channel`, `delete_channel`, and `delete_input` idempotent against `NotFoundException` so the cleanup workflow stays clean if a step has already run
+
 ## 1.0.5
 
 - Fixed clip harvest status display: DynamoDB String Set attributes (e.g. `harvestedOrientations` written by the harvest state machine) were being unmarshalled as JS `Set` instances and serialized by `JSON.stringify` as `{}`, so the UI never saw harvested orientations after a prepare-download flow

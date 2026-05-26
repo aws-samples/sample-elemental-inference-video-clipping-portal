@@ -23,6 +23,15 @@ class MediaLiveAPIError(Exception):
     pass
 
 
+class InputBusyError(MediaLiveAPIError):
+    """
+    Raised when DeleteInput is rejected because the input is still attached
+    to a channel that is in DELETING state. Callers (the DeleteChannel state
+    machine) can retry after waiting for the channel to fully delete.
+    """
+    pass
+
+
 class MediaLiveClient:
     """Wrapper for MediaLive boto3 client"""
     
@@ -159,7 +168,8 @@ class MediaLiveClient:
             channel_id: Channel ID to delete
             
         Returns:
-            Channel deletion response
+            Channel deletion response. Treats NotFoundException as success
+            (idempotent — channel is already gone).
         """
         try:
             logger.info(f"Deleting MediaLive channel: {channel_id}")
@@ -174,6 +184,10 @@ class MediaLiveClient:
         except ClientError as e:
             error_code = e.response['Error']['Code']
             error_message = e.response['Error']['Message']
+            if error_code in ("NotFoundException", "ResourceNotFoundException"):
+                logger.info(f"Channel {channel_id} already deleted")
+                metrics.add_metric(name="ChannelDeleteNotFound", unit=MetricUnit.Count, value=1)
+                return {"alreadyDeleted": True}
             logger.error(f"Failed to delete channel {channel_id}: {error_code} - {error_message}")
             metrics.add_metric(name="ChannelDeleteError", unit=MetricUnit.Count, value=1)
             raise MediaLiveAPIError(f"Failed to delete channel: {error_message}")
@@ -335,7 +349,10 @@ class MediaLiveClient:
             input_id: Input ID to delete
             
         Returns:
-            Input deletion response
+            Input deletion response. Treats NotFoundException as success
+            (idempotent — input is already gone). Raises a distinct
+            ``InputBusyError`` when the input is still attached to a channel
+            so callers (the DeleteChannel state machine) can retry.
         """
         try:
             logger.info(f"Deleting MediaLive input: {input_id}")
@@ -350,10 +367,22 @@ class MediaLiveClient:
         except ClientError as e:
             error_code = e.response['Error']['Code']
             error_message = e.response['Error']['Message']
+            if error_code in ("NotFoundException", "ResourceNotFoundException"):
+                logger.info(f"Input {input_id} already deleted")
+                metrics.add_metric(name="InputDeleteNotFound", unit=MetricUnit.Count, value=1)
+                return {"alreadyDeleted": True}
+            # MediaLive returns 400 BadRequestException with the message
+            # "Input <id> is busy, it cannot be deleted" while the channel
+            # that referenced it is still in DELETING state.
+            if "is busy" in error_message:
+                logger.warning(f"Input {input_id} is still attached: {error_message}")
+                metrics.add_metric(name="InputDeleteBusy", unit=MetricUnit.Count, value=1)
+                raise InputBusyError(f"Input is busy: {error_message}")
             logger.error(f"Failed to delete input {input_id}: {error_code} - {error_message}")
             metrics.add_metric(name="InputDeleteError", unit=MetricUnit.Count, value=1)
             raise MediaLiveAPIError(f"Failed to delete input: {error_message}")
     
+    @tracer.capture_method
     @tracer.capture_method
     def describe_channel(self, channel_id: str) -> Dict[str, Any]:
         """
@@ -363,7 +392,11 @@ class MediaLiveClient:
             channel_id: Channel ID to describe
             
         Returns:
-            Channel description response
+            Channel description response with an added ``channelExists`` flag.
+            Returns ``{"channelExists": False}`` when the channel no longer exists
+            (NotFoundException) so callers — notably the DeleteChannel state
+            machine, which polls until the channel is fully deleted — can branch
+            on a clean signal instead of catching an error.
         """
         try:
             logger.info(f"Describing MediaLive channel: {channel_id}")
@@ -373,11 +406,16 @@ class MediaLiveClient:
             metrics.add_metric(name="ChannelDescribed", unit=MetricUnit.Count, value=1)
             logger.info(f"Successfully described channel: {channel_id}")
             
+            response["channelExists"] = True
             return response
             
         except ClientError as e:
             error_code = e.response['Error']['Code']
             error_message = e.response['Error']['Message']
+            if error_code in ("NotFoundException", "ResourceNotFoundException"):
+                logger.info(f"Channel {channel_id} not found (already deleted)")
+                metrics.add_metric(name="ChannelDescribeNotFound", unit=MetricUnit.Count, value=1)
+                return {"channelExists": False}
             logger.error(f"Failed to describe channel {channel_id}: {error_code} - {error_message}")
             metrics.add_metric(name="ChannelDescribeError", unit=MetricUnit.Count, value=1)
             raise MediaLiveAPIError(f"Failed to describe channel: {error_message}")

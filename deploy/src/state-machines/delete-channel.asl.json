@@ -1,7 +1,22 @@
 {
-  "Comment": "DeleteChannel: best-effort cleanup of all channel resources. Each step catches errors and continues to the next.",
-  "StartAt": "DeleteMediaLiveChannel",
+  "Comment": "DeleteChannel: best-effort cleanup of all channel resources. Each step catches errors and continues to the next. After DeleteMediaLiveChannel returns, polls DescribeChannel until the channel is fully deleted before attempting DeleteMediaLiveInput, since the input cannot be deleted while still attached to a channel in DELETING state.",
+  "StartAt": "InitDeleteState",
   "States": {
+    "InitDeleteState": {
+      "Type": "Pass",
+      "Parameters": {
+        "channelId.$": "$.channelId",
+        "inputId.$": "$.inputId",
+        "feedId.$": "$.feedId",
+        "channelGroupName.$": "$.channelGroupName",
+        "mediaPackageChannelName.$": "$.mediaPackageChannelName",
+        "originEndpointName.$": "$.originEndpointName",
+        "landscapeEndpointName.$": "$.landscapeEndpointName",
+        "verticalEndpointName.$": "$.verticalEndpointName",
+        "deletePollAttempts": 0
+      },
+      "Next": "DeleteMediaLiveChannel"
+    },
     "DeleteMediaLiveChannel": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
@@ -15,8 +30,64 @@
         }
       },
       "ResultPath": null,
-      "Next": "DeleteMediaLiveInput",
-      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteMediaLiveInput" }]
+      "Next": "WaitForChannelDelete",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "WaitForChannelDelete" }]
+    },
+    "WaitForChannelDelete": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "DescribeChannelForDelete"
+    },
+    "DescribeChannelForDelete": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MediaLiveClientFunctionArn}",
+        "Payload": {
+          "action": "describe_channel",
+          "params": {
+            "channel_id.$": "$.channelId"
+          }
+        }
+      },
+      "ResultSelector": {
+        "parsed.$": "States.StringToJson($.Payload.body)"
+      },
+      "ResultPath": "$.describeResult",
+      "Next": "EvaluateChannelDeleteStatus",
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "IncrementDeletePollAttempts" }]
+    },
+    "EvaluateChannelDeleteStatus": {
+      "Type": "Choice",
+      "Comment": "Channel is gone when channelExists=false (NotFound) or State=DELETED.",
+      "Choices": [
+        { "Variable": "$.describeResult.parsed.channel.channelExists", "BooleanEquals": false, "Next": "DeleteMediaLiveInput" },
+        { "Variable": "$.describeResult.parsed.channel.State", "StringEquals": "DELETED", "Next": "DeleteMediaLiveInput" }
+      ],
+      "Default": "IncrementDeletePollAttempts"
+    },
+    "IncrementDeletePollAttempts": {
+      "Type": "Pass",
+      "Parameters": {
+        "channelId.$": "$.channelId",
+        "inputId.$": "$.inputId",
+        "feedId.$": "$.feedId",
+        "channelGroupName.$": "$.channelGroupName",
+        "mediaPackageChannelName.$": "$.mediaPackageChannelName",
+        "originEndpointName.$": "$.originEndpointName",
+        "landscapeEndpointName.$": "$.landscapeEndpointName",
+        "verticalEndpointName.$": "$.verticalEndpointName",
+        "deletePollAttempts.$": "States.MathAdd($.deletePollAttempts, 1)"
+      },
+      "Next": "CheckDeletePollAttempts"
+    },
+    "CheckDeletePollAttempts": {
+      "Type": "Choice",
+      "Comment": "Bound poll loop to ~3 minutes (18 * 10s) before giving up and attempting input delete anyway.",
+      "Choices": [
+        { "Variable": "$.deletePollAttempts", "NumericGreaterThanEquals": 18, "Next": "DeleteMediaLiveInput" }
+      ],
+      "Default": "WaitForChannelDelete"
     },
     "DeleteMediaLiveInput": {
       "Type": "Task",
@@ -31,6 +102,14 @@
         }
       },
       "ResultPath": null,
+      "Retry": [
+        {
+          "ErrorEquals": ["InputBusyError"],
+          "IntervalSeconds": 15,
+          "MaxAttempts": 4,
+          "BackoffRate": 1.5
+        }
+      ],
       "Next": "DeleteInferenceFeed",
       "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "DeleteInferenceFeed" }]
     },
