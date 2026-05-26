@@ -91,6 +91,7 @@ export class MediaLiveLambdaConstruct extends Construct {
                     "elemental-inference:AssociateFeed",
                     "elemental-inference:DisassociateFeed",
                     "elemental-inference:GetFeed",
+                    "elemental-inference:GetMetadata",
                     "elemental-inference:ListFeeds",
                 ],
                 resources: ["*"],
@@ -146,6 +147,10 @@ export class MediaLiveLambdaConstruct extends Construct {
             description: "Service role for MediaLive channels",
         });
 
+        // S3 access for reading input assets and (when configured) writing HLS/archive
+        // outputs. Bucket-scoped read on the video assets bucket is also added in
+        // app-stack.ts via grantRead(); these wildcard actions remain to support any
+        // future S3-output configurations the channel may use.
         role.addToPolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -154,21 +159,6 @@ export class MediaLiveLambdaConstruct extends Construct {
                     "s3:PutObject",
                     "s3:GetObject",
                     "s3:DeleteObject",
-                    "mediapackage:*",
-                ],
-                resources: ["*"],
-            }),
-        );
-
-        role.addToPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    "mediastore:ListContainers",
-                    "mediastore:PutObject",
-                    "mediastore:GetObject",
-                    "mediastore:DeleteObject",
-                    "mediastore:DescribeObject",
                 ],
                 resources: ["*"],
             }),
@@ -188,36 +178,8 @@ export class MediaLiveLambdaConstruct extends Construct {
             }),
         );
 
-        role.addToPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    "mediaconnect:ManagedDescribeFlow",
-                    "mediaconnect:ManagedAddOutput",
-                    "mediaconnect:ManagedRemoveOutput",
-                ],
-                resources: ["*"],
-            }),
-        );
-
-        role.addToPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    "ec2:describeSubnets",
-                    "ec2:describeNetworkInterfaces",
-                    "ec2:createNetworkInterface",
-                    "ec2:createNetworkInterfacePermission",
-                    "ec2:deleteNetworkInterface",
-                    "ec2:deleteNetworkInterfacePermission",
-                    "ec2:describeSecurityGroups",
-                    "ec2:describeAddresses",
-                    "ec2:associateAddress",
-                ],
-                resources: ["*"],
-            }),
-        );
-
+        // MediaPackage V2 is the only output destination configured for channels in
+        // this stack (see deploy/src/state-machines/create-channel.asl.json).
         role.addToPolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -226,6 +188,11 @@ export class MediaLiveLambdaConstruct extends Construct {
             }),
         );
 
+        // Elemental Inference permissions used by MediaLive when the channel runs
+        // with InferenceSettings. GetMetadata is the runtime call MediaLive makes
+        // against the Starfish feed for each StarfishOutputs entry on a video
+        // description; the Associate/Disassociate/Get/List calls are made when the
+        // channel is created, updated, started, and torn down.
         role.addToPolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -233,6 +200,7 @@ export class MediaLiveLambdaConstruct extends Construct {
                     "elemental-inference:AssociateFeed",
                     "elemental-inference:DisassociateFeed",
                     "elemental-inference:GetFeed",
+                    "elemental-inference:GetMetadata",
                     "elemental-inference:ListFeeds",
                 ],
                 resources: ["*"],
@@ -245,9 +213,8 @@ export class MediaLiveLambdaConstruct extends Construct {
             [
                 {
                     id: "AwsSolutions-IAM5",
-                    reason: "MediaLive service role requires wildcard resources for mediapackage, mediapackagev2, elemental-inference, and logs as these services have limited resource-level permission support",
+                    reason: "MediaLive service role requires wildcard resources for mediapackagev2, elemental-inference, and logs as these services have limited resource-level permission support",
                     appliesTo: [
-                        "Action::mediapackage:*",
                         "Action::mediapackagev2:*",
                         "Resource::arn:aws:logs:*:*:*",
                         "Resource::*",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+- Removed unused permissions from the MediaLive service role and API client Lambda role: `mediapackage:*` (v1), `mediastore:*`, `mediaconnect:Managed*`, and the `ec2:*` networking block — none of these match the channel configuration produced by `create-channel.asl.json`
+- Added `elemental-inference:GetMetadata` to both roles so MediaLive can fetch Starfish feed metadata at runtime when `StarfishOutputs` are configured on a video description
+- Updated the cdk-nag `AwsSolutions-IAM5` suppression in `medialive-lambda-construct.ts` to drop the no-longer-applicable `mediapackage:*` entry
+- Reordered the web app primary navigation (Channels now precedes Events) and removed commented-out placeholder items for Highlight Reel Builder, Generated Reels, Feedback, and Notifications
+
 ## 1.0.3
 
 - `web-app/vite.config.ts` now throws a clear error at startup when `VITE_CLOUDFRONT_URL` is missing, replacing a silent fallback to a non-existent hardcoded CloudFront domain that caused `/api/*` requests to return Vite's HTML SPA fallback

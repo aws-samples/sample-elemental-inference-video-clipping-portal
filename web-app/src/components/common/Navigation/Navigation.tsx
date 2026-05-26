@@ -10,13 +10,9 @@ const Navigation: React.FC = () => {
   const { setNavigationOpen } = useLayout()
 
   const navigationItems: NavigationItem[] = [
-    { text: 'Events', href: '/', type: 'link' },
     { text: 'Channels', href: '/channels', type: 'link' },
-    // { text: 'Highlight Reel Builder', href: '/reel-builder', type: 'link' },
-    // { text: 'Generated Reels', href: '/highlight-reels', type: 'link' },
+    { text: 'Events', href: '/', type: 'link' },
     { text: 'Video Editor', href: '/video-editor', type: 'link' },
-    // { text: 'Feedback', href: '/feedback', type: 'link' },
-    // { text: 'Notifications', href: '/notifications', type: 'section' },
     { text: 'Documentation', href: '/docs', type: 'link' },
   ]
 
