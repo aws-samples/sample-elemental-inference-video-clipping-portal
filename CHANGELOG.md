@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Fixed `npm run deploy` failing from inside `deploy/` with "specify which stacks to use or specify --all" — the script now passes `--all` and forwards the `STACK_NAME` env var as CDK context, matching the root-level deploy script
+- Added a matching `destroy` script to `deploy/package.json` so cleanup also works from either directory
+
 ## 1.0.6
 
 - Fixed orphaned MediaLive inputs after channel deletion: the DeleteChannel state machine now polls DescribeChannel until the channel is fully deleted (or 3-minute cap) before attempting DeleteInput, instead of racing the asynchronous DeleteChannel and hitting `Input <id> is busy, it cannot be deleted`

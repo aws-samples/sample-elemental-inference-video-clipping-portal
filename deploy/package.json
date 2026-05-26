@@ -7,7 +7,8 @@
     "test": "jest",
     "cdk": "cdk",
     "bootstrap": "cdk bootstrap --qualifier sf2025 --cloudformation-execution-policies 'arn:aws:iam::aws:policy/PowerUserAccess,arn:aws:iam::aws:policy/IAMFullAccess'",
-    "deploy": "cdk deploy --require-approval never",
+    "deploy": "cdk deploy -c stack_name=\"${STACK_NAME:-}\" --all --require-approval never",
+    "destroy": "cdk destroy -c stack_name=\"${STACK_NAME:-}\" --all",
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.(ts|tsx|js|jsx)\""
   },
