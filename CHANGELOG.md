@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.12
+
+- Improved the clip editor's behavior when opening a clip that hasn't been harvested yet: instead of rendering a broken Omakase player with a brief "Preparing Content" flash, the page now shows a clear info panel explaining that a harvest has been initiated, what orientations are missing, and roughly how long to wait
+- Added 5-second polling of the clip record while the editor is awaiting a harvest, so the editor lights up automatically as soon as the first sourceKey lands in DynamoDB; polling is cleaned up on completion and on unmount
+- Added diagnostic logging on the harvest trigger so the browser console makes it clear whether a state machine was actually started or the download API skipped because an existing job was in flight; harvest-trigger errors are also surfaced inline with a manual "Refresh" button on the alert
+
 ## 1.0.10
 
 - Removed the redundant "All Key Moments" status filter dropdown from the clips list — the Harvest Status column already exposes a built-in filter, and the dropdown's option list was out of sync with the actual statuses the codebase produces (no entries for `archived` or `detected`, stale entries for `Processing`/`Completed`/`Reviewed`/`Published` etc.)
