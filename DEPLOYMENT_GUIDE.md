@@ -42,6 +42,10 @@ npx cdk bootstrap ${AWS_ACCOUNT}/us-east-1 ${AWS_ACCOUNT}/ap-southeast-2 \
 
 ## 3. Build
 
+`npm run deploy` (Section 4) builds everything for you, so you can usually skip
+this step. Build manually only when you want to validate compilation or build
+artifacts without deploying.
+
 ```bash
 npm run build
 ```
@@ -56,7 +60,7 @@ npm run build.deploy   # CDK infrastructure
 
 ## 4. Deploy
 
-All deploy commands should be run from the **project root** (not from `deploy/`). The root `npm run deploy` script handles passing `--all` so both the WAF and app stacks are deployed together.
+All deploy commands should be run from the **project root** (not from `deploy/`). The root `npm run deploy` script first runs the full build (`python3 build.py`) and then invokes CDK with `--all` so both the WAF and app stacks are deployed together — no separate build step required.
 
 By default, the app stack region is determined by your AWS CLI configuration (`AWS_DEFAULT_REGION` or the profile's region). The stack name defaults to `sample-clipping-portal` (defined in `deploy/src/app.ts`) and can be overridden via the `STACK_NAME` env var. Both can be overridden:
 
@@ -72,6 +76,9 @@ npm run deploy -- -c region=ap-southeast-2
 
 # Both overrides together
 STACK_NAME="my-stack" npm run deploy -- -c region=ap-southeast-2
+
+# Skip the build step (only when nothing has changed since the last build)
+npm run deploy.skip-build
 ```
 
 > **Note:** The WAF stack always deploys to us-east-1 regardless of the region you specify. The `-c region=` flag only controls where the app stack is created.

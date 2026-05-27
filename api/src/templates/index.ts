@@ -25,6 +25,7 @@ import {
     UpdateCommand,
     DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { stringifyForApi } from "../shared/dynamodb-json";
 
 // Initialize AWS Lambda Powertools for observability
 const logger = new Logger();
@@ -378,6 +379,6 @@ function createResponse(statusCode: number, body: any): APIGatewayProxyResult {
                 "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
             "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         },
-        body: statusCode === 204 ? "" : JSON.stringify(body),
+        body: statusCode === 204 ? "" : stringifyForApi(body),
     };
 }

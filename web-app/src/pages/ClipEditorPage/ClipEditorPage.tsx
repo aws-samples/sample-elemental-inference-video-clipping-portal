@@ -10,7 +10,7 @@ import {
     SpaceBetween,
     Spinner,
 } from "@cloudscape-design/components";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ClipEditor } from "../../components/clips/ClipEditor/ClipEditor";
 import { ClipsList } from "../../components/clips/ClipsList";
@@ -33,8 +33,9 @@ const ClipEditorPage: React.FC = () => {
     const [showViewClipDialog, setShowViewClipDialog] = useState(false);
     const [eventChannelName, setEventChannelName] = useState<string | undefined>();
     const [channels, setChannels] = useState<any[]>([]);
-    const [harvestingMissing, setHarvestingMissing] = useState(false);
     const [harvestTriggered, setHarvestTriggered] = useState(false);
+    const [harvestError, setHarvestError] = useState<string | undefined>(undefined);
+    const harvestPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const apiService = ApiService.getInstance();
 
@@ -87,42 +88,117 @@ const ClipEditorPage: React.FC = () => {
         channelName && setEventChannelName(channelName.name);
     }, [clip]);
 
-    // Trigger harvest for missing orientations when editor opens
-    useEffect(() => {
-        if (!clip || harvestTriggered) return;
+    // Determine which clip source the editor would use (it loads a single source).
+    const editorSource = clip
+        ? clip.sourceKey || clip.sourceKeys?.landscape || clip.sourceKeys?.portrait
+        : undefined;
+    const editorReady = Boolean(editorSource);
 
+    // Compute the orientations the clip is still waiting on.
+    const missingOrientations: Array<"landscape" | "portrait"> = (() => {
+        if (!clip) return [];
         const harvested = Array.from(clip.harvestedOrientations ?? []);
         const sourceKeys = clip.sourceKeys ?? {};
         const missing: Array<"landscape" | "portrait"> = [];
-        // Only consider an orientation missing if it's not in harvestedOrientations AND not in sourceKeys
         if (!harvested.includes("landscape") && !sourceKeys.landscape) missing.push("landscape");
         if (!harvested.includes("portrait") && !sourceKeys.portrait) missing.push("portrait");
+        return missing;
+    })();
+    const isAwaitingHarvest = !editorReady && missingOrientations.length > 0;
 
-        if (missing.length === 0) return;
+    // Trigger harvest for missing orientations when editor opens.
+    useEffect(() => {
+        if (!clip || harvestTriggered) return;
+        if (missingOrientations.length === 0) return;
 
         setHarvestTriggered(true);
-        setHarvestingMissing(true);
+        setHarvestError(undefined);
 
         const triggerHarvests = async () => {
             try {
-                // Trigger harvest for each missing orientation
-                await Promise.all(
-                    missing.map((orientation) =>
+                const responses = await Promise.all(
+                    missingOrientations.map((orientation) =>
                         downloadService.createDownloadJobs(
                             [{ id: clip.id, type: "clip" }],
-                            orientation
-                        )
-                    )
+                            orientation,
+                        ),
+                    ),
                 );
+
+                console.log("[ClipEditor] Harvest trigger responses", {
+                    clipId: clip.id,
+                    requested: missingOrientations,
+                    responses,
+                });
+
+                // The download API skips when a download_job is already
+                // processing/harvesting/pending for this clip. That's fine —
+                // it just means a workflow is already running and our polling
+                // will pick up the result. Surface a hint when nothing was
+                // actually started so the developer/user knows why.
+                const allSkipped = responses.every(
+                    (r) => r.processed.length === 0 && r.skipped.length > 0,
+                );
+                if (allSkipped) {
+                    console.warn(
+                        "[ClipEditor] Harvest not started — an existing download job is in flight for this clip. Waiting on it instead.",
+                        responses,
+                    );
+                }
             } catch (error) {
                 console.error("Failed to trigger harvest for missing orientations:", error);
-            } finally {
-                setHarvestingMissing(false);
+                setHarvestError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to start a harvest. Please try again.",
+                );
             }
         };
 
         triggerHarvests();
-    }, [clip, harvestTriggered]);
+    }, [clip, harvestTriggered, missingOrientations]);
+
+    // While waiting for a harvest, poll the clip record so the editor lights up
+    // as soon as the state machine writes the first sourceKey/harvestedOrientations.
+    useEffect(() => {
+        if (!videoId) return;
+        if (!isAwaitingHarvest) {
+            // Nothing to wait for — clear any active poll.
+            if (harvestPollRef.current) {
+                clearInterval(harvestPollRef.current);
+                harvestPollRef.current = null;
+            }
+            return;
+        }
+
+        if (harvestPollRef.current) return; // already polling
+
+        harvestPollRef.current = setInterval(async () => {
+            try {
+                const updated = await fetchClip(videoId);
+                if (updated) setClip(updated);
+            } catch (error) {
+                console.error("Failed to refresh clip while waiting for harvest:", error);
+            }
+        }, 5000);
+
+        return () => {
+            if (harvestPollRef.current) {
+                clearInterval(harvestPollRef.current);
+                harvestPollRef.current = null;
+            }
+        };
+    }, [videoId, isAwaitingHarvest, fetchClip]);
+
+    const handleManualRefresh = useCallback(async () => {
+        if (!videoId) return;
+        try {
+            const updated = await fetchClip(videoId);
+            if (updated) setClip(updated);
+        } catch (error) {
+            console.error("Failed to refresh clip:", error);
+        }
+    }, [videoId, fetchClip]);
 
     const handleDiscard = () => {
         // Navigate back to clips list or previous page
@@ -374,23 +450,49 @@ const ClipEditorPage: React.FC = () => {
                                 </Alert>
                             )}
 
-                        {/* Harvesting alert for missing orientations */}
-                        {harvestingMissing && (
-                            <Alert type="info" header="Preparing Content">
-                                <SpaceBetween direction="horizontal" size="xs" alignItems="center">
-                                    <Spinner size="normal" />
-                                    <span>Harvesting missing orientations for editing. You can begin editing once at least one orientation is ready.</span>
+                        {/* Awaiting harvest: show a clear "what's happening" panel
+                            instead of an editor that has nothing to load. */}
+                        {clip && isAwaitingHarvest && (
+                            <Alert
+                                type="info"
+                                header="Preparing video for editing"
+                                action={
+                                    <Button onClick={handleManualRefresh} ariaLabel="Refresh">
+                                        Refresh
+                                    </Button>
+                                }
+                            >
+                                <SpaceBetween size="s">
+                                    <Box variant="p">
+                                        This clip hasn't been archived from the live stream yet.
+                                        We've started a harvest in the background — editing will
+                                        be available once at least one orientation
+                                        ({missingOrientations.join(" / ")}) is ready. This usually
+                                        takes about a minute.
+                                    </Box>
+                                    <SpaceBetween direction="horizontal" size="xs" alignItems="center">
+                                        <Spinner size="normal" />
+                                        <Box variant="small">
+                                            Checking automatically every few seconds — you can stay
+                                            on this page or come back later.
+                                        </Box>
+                                    </SpaceBetween>
+                                    {harvestError && (
+                                        <Box variant="small" color="text-status-error">
+                                            {harvestError}
+                                        </Box>
+                                    )}
                                 </SpaceBetween>
                             </Alert>
                         )}
 
-                        {/* Clip Editor Component */}
-                        {clip && (
+                        {/* Clip Editor — only render once at least one source is available. */}
+                        {clip && editorReady && (
                             <ClipEditor
                                 clipId={clip.id}
                                 clipName={clip.name}
-                                videoSrc={clip.sourceKey || clip.sourceKeys?.landscape || clip.sourceKeys?.portrait}
-                                sourceKey={clip.sourceKey || clip.sourceKeys?.landscape || clip.sourceKeys?.portrait}
+                                videoSrc={editorSource}
+                                sourceKey={editorSource}
                                 initialStartTime={clip.originalAssetId ? 0 : (clip.startTime || 0)}
                                 initialEndTime={undefined}
                                 onDiscard={handleDiscard}

@@ -8,7 +8,8 @@
     "build.web": "python3 build.py --web",
     "build.deploy": "python3 build.py --deploy",
     "deploy.bootstrap": "cd deploy && npm install && npm run bootstrap",
-    "deploy": "cd deploy && npm run cdk deploy -- -c stack_name=\"${STACK_NAME:-}\" --all --require-approval never",
+    "deploy": "python3 build.py && cd deploy && npm run cdk deploy -- -c stack_name=\"${STACK_NAME:-}\" --all --require-approval never",
+    "deploy.skip-build": "cd deploy && npm run cdk deploy -- -c stack_name=\"${STACK_NAME:-}\" --all --require-approval never",
     "destroy": "cd deploy && npm run cdk destroy -- -c stack_name=\"${STACK_NAME:-}\" --all"
   },
   "devDependencies": {

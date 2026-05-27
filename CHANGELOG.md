@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.0.16
+
+- Removed the "Publish Clips" button from the clips list — it only flipped a `status: "published"` field that nothing else in the app reacted to (no S3 push, no public URL, no downstream notification), and the matching status filter that surfaced it was already removed in v1.0.10
+- Cleaned up the related plumbing: `showPublish` / `onPublishClips` props on `ClipsList`, `handlePublishClips` in `HomePage`, the `"published"` entries in `renderClipStatus` (ClipsList, ViewClip, shared columnRenderers), and `"published"` from the `ClipStatus` type union in both `web-app/types/index.ts` and `api/src/clips/index.ts`
+
+## 1.0.15
+
+- Root-level `npm run deploy` now runs `python3 build.py` before invoking CDK so the deployment always picks up the latest web-app/api builds — previously stale `web-app/dist` content could be uploaded if the user forgot to build first
+- Added `npm run deploy.skip-build` as an escape hatch retaining the old behavior for cases where nothing has changed since the last build
+- Updated `DEPLOYMENT_GUIDE.md` Sections 3 and 4 to reflect that the standalone build step is now optional
+
+## 1.0.14
+
+- Cleared the `api` package npm audit (1 moderate → 0): removed the unused `uuid` and `@types/uuid` declarations — Lambdas use `require("crypto").randomUUID()` directly
+- Reduced the `deploy` package npm audit (1 high + 3 moderate → 1 moderate): removed the unused legacy v2 `aws-sdk` declaration (CDK uses bundled v3 `@aws-sdk/*` packages internally), cleared the transitive `uuid` issue, and bumped `aws-cdk-lib` 2.200.1 → 2.257.0 to pull a fixed `fast-uri`
+- Added `AwsSolutions-COG8` to the cdk-nag suppression list (new rule introduced with the cdk-nag/cdk-lib bump that requires the Cognito Plus feature plan, not appropriate for a prototype)
+- Remaining `deploy` `brace-expansion` moderate is bundled inside `aws-cdk-lib`'s tarball and is not reachable via npm overrides — needs an upstream CDK release
+
+## 1.0.13
+
+- Pinned `@byomakase/omakase-player` to exact version `0.20.0` after bisecting a clip editor playback regression: 0.21–0.22 fail to load duration or play, 0.24+ load duration but show black video. Same MediaPackage V2 CMAF manifests play in other browser players, so the regression is upstream
+- Documented the pin and accepted axios transitive-vulnerability exposure in `web-app/DEPENDENCY_PINS.md`, with a bisect table for future revisits
+- Ran `npm audit fix` to upgrade `js-cookie` (transitive via Amplify) past advisory GHSA-qjx8-664m-686j, leaving only the documented axios transitive advisories outstanding
+
+## 1.0.12
+
+- Improved the clip editor's behavior when opening a clip that hasn't been harvested yet: instead of rendering a broken Omakase player with a brief "Preparing Content" flash, the page now shows a clear info panel explaining that a harvest has been initiated, what orientations are missing, and roughly how long to wait
+- Added 5-second polling of the clip record while the editor is awaiting a harvest, so the editor lights up automatically as soon as the first sourceKey lands in DynamoDB; polling is cleaned up on completion and on unmount
+- Added diagnostic logging on the harvest trigger so the browser console makes it clear whether a state machine was actually started or the download API skipped because an existing job was in flight; harvest-trigger errors are also surfaced inline with a manual "Refresh" button on the alert
+
+## 1.0.10
+
+- Removed the redundant "All Key Moments" status filter dropdown from the clips list — the Harvest Status column already exposes a built-in filter, and the dropdown's option list was out of sync with the actual statuses the codebase produces (no entries for `archived` or `detected`, stale entries for `Processing`/`Completed`/`Reviewed`/`Published` etc.)
+
+## 1.0.9
+
+- Fixed clip Harvest Status column staying on "Pending" after manual prepare-download: the download workflow now promotes `clip.status` from a pre-harvest state (`detected`/`original`/`processing`/`failed`) to `archived` once a harvest branch completes, mirroring what auto-harvest already does via `harvest-validate`'s `finalize_auto_harvest` action
+- The new `PromoteClipStatusToArchived` state uses a DynamoDB ConditionExpression so it never overwrites later-stage statuses like `modified`, `reviewed`, or `published`, and any failure (including the conditional check) falls through to the next state safely
+
+## 1.0.8
+
+- Added `elemental-inference:PutMedia` to the MediaLive service role and API client Lambda role — this is the runtime call MediaLive uses to push encoded video frames into the Starfish inference feed (paired with the existing `GetMetadata` permission for reading inference results)
+
+## 1.0.7
+
+- Fixed `npm run deploy` failing from inside `deploy/` with "specify which stacks to use or specify --all" — the script now passes `--all` and forwards the `STACK_NAME` env var as CDK context, matching the root-level deploy script
+- Added a matching `destroy` script to `deploy/package.json` so cleanup also works from either directory
+
+## 1.0.6
+
+- Fixed orphaned MediaLive inputs after channel deletion: the DeleteChannel state machine now polls DescribeChannel until the channel is fully deleted (or 3-minute cap) before attempting DeleteInput, instead of racing the asynchronous DeleteChannel and hitting `Input <id> is busy, it cannot be deleted`
+- Added a distinct `InputBusyError` exception class in the MediaLive API client Lambda; the handler re-raises it so the state machine can apply a targeted `Retry` (4 attempts, 15s base, 1.5x backoff) as a backstop on `DeleteMediaLiveInput`
+- Made `describe_channel`, `delete_channel`, and `delete_input` idempotent against `NotFoundException` so the cleanup workflow stays clean if a step has already run
+
+## 1.0.5
+
+- Fixed clip harvest status display: DynamoDB String Set attributes (e.g. `harvestedOrientations` written by the harvest state machine) were being unmarshalled as JS `Set` instances and serialized by `JSON.stringify` as `{}`, so the UI never saw harvested orientations after a prepare-download flow
+- Added `api/src/shared/dynamodb-json.ts` with a reusable `jsonReplacer` / `stringifyForApi` helper that converts `Set` instances to arrays during serialization
+- Wired `stringifyForApi` into the `createResponse` helper of `clips`, `events`, `templates`, `system-settings`, and `jobs-api` Lambdas so any future Set-typed attributes serialize correctly
+
+## 1.0.4
+
+- Removed unused permissions from the MediaLive service role and API client Lambda role: `mediapackage:*` (v1), `mediastore:*`, `mediaconnect:Managed*`, and the `ec2:*` networking block — none of these match the channel configuration produced by `create-channel.asl.json`
+- Added `elemental-inference:GetMetadata` to both roles so MediaLive can fetch Starfish feed metadata at runtime when `StarfishOutputs` are configured on a video description
+- Updated the cdk-nag `AwsSolutions-IAM5` suppression in `medialive-lambda-construct.ts` to drop the no-longer-applicable `mediapackage:*` entry
+- Reordered the web app primary navigation (Channels now precedes Events) and removed commented-out placeholder items for Highlight Reel Builder, Generated Reels, Feedback, and Notifications
+
 ## 1.0.3
 
 - `web-app/vite.config.ts` now throws a clear error at startup when `VITE_CLOUDFRONT_URL` is missing, replacing a silent fallback to a non-existent hardcoded CloudFront domain that caused `/api/*` requests to return Vite's HTML SPA fallback

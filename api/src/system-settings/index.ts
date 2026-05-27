@@ -7,6 +7,7 @@ import { APIGatewayProxyEventV2, APIGatewayProxyResult } from "aws-lambda";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { stringifyForApi } from "../shared/dynamodb-json";
 
 const logger = new Logger();
 const dynamoClient = new DynamoDBClient({});
@@ -162,6 +163,6 @@ function createResponse(statusCode: number, body: any): APIGatewayProxyResult {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
         },
-        body: JSON.stringify(body),
+        body: stringifyForApi(body),
     };
 }

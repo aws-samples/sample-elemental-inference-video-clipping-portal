@@ -26,7 +26,7 @@ from aws_lambda_powertools import Logger, Tracer, Metrics
 from aws_lambda_powertools.metrics import MetricUnit
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
-from medialive_client import MediaLiveClient, MediaLiveAPIError
+from medialive_client import MediaLiveClient, MediaLiveAPIError, InputBusyError
 from models import (
     CreateChannelRequest, UpdateChannelRequest, DeleteChannelRequest,
     StartChannelRequest, StopChannelRequest, CreateInputRequest,
@@ -114,6 +114,12 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
     except ValueError as e:
         logger.error(f"Configuration error: {str(e)}")
         return error_response(f"Configuration error: {str(e)}", 500)
+    except InputBusyError as e:
+        # Input still attached to a channel that is in DELETING state.
+        # Surface a distinct errorType so the DeleteChannel state machine
+        # can catch on it and retry after waiting.
+        logger.warning(f"Input busy: {str(e)}")
+        raise
     except MediaLiveAPIError as e:
         logger.error(f"MediaLive API error: {str(e)}")
         return error_response(str(e), 502)

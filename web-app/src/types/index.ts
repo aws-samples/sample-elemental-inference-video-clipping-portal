@@ -100,8 +100,7 @@ export type ClipStatus =
     | "review_in_progress"
     | "discarded"
     | "reviewed"
-    | "failed"
-    | "published";
+    | "failed";
 
 // Annotations
 export interface Annotation {

@@ -46,6 +46,10 @@ export const suppressCdkNagRules = (stack: cdk.Stack) => {
                 reason: "Cognito advanced security mode not required for prototype",
             },
             {
+                id: "AwsSolutions-COG8",
+                reason: "Cognito Plus feature plan not required for prototype",
+            },
+            {
                 id: "AwsSolutions-IAM4",
                 reason: "AWS managed policies allowed for prototype",
                 appliesTo: [

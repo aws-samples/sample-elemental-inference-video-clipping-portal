@@ -17,7 +17,7 @@
     "@aws-sdk/client-lambda": "^3.899.0",
     "@aws-sdk/protocol-http": "^3.374.0",
     "@aws-sdk/signature-v4": "^3.374.0",
-    "@byomakase/omakase-player": "^0.25.3",
+    "@byomakase/omakase-player": "0.20.0",
     "@cloudscape-design/code-view": "^3.0.77",
     "@cloudscape-design/components": "^3.0.1078",
     "@cloudscape-design/global-styles": "^1.0.45",

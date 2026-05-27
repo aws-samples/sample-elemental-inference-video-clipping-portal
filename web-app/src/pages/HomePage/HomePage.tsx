@@ -91,19 +91,6 @@ const HomePage: React.FC = () => {
         setShowViewEventDialog(true);
     };
 
-    const handlePublishClips = () => {
-      if (selectedClips && selectedClips.length > 0) {
-        const promises: Promise<any>[] = [];
-        selectedClips.forEach((clip: Clip) => {
-          const promise = apiService.updateClip({...clip, status: "published" })
-          promises.push(promise);
-        });
-        Promise.all(promises).then(() => {
-            fetchClips(selectedEvent!.id);
-        })
-      }
-    };
-
     const handleViewClip = (clip: Clip) => {
         setShowViewClipDialog(true);
         setSelectedClip(clip);
@@ -329,9 +316,7 @@ const HomePage: React.FC = () => {
                     selectedClips={selectedClips}
                     loading={loadingClips}
                     showActions={true}
-                    showPublish={true}
                     showDownload={true}
-                    onPublishClips={handlePublishClips}
                     onViewClip={handleViewClip}
                     onEditClip={handleEditClip}
                     onFeedbackClip={handleFeedbackClip}
