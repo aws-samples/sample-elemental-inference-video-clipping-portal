@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.14
+
+- Cleared the `api` package npm audit (1 moderate → 0): removed the unused `uuid` and `@types/uuid` declarations — Lambdas use `require("crypto").randomUUID()` directly
+- Reduced the `deploy` package npm audit (1 high + 3 moderate → 1 moderate): removed the unused legacy v2 `aws-sdk` declaration (CDK uses bundled v3 `@aws-sdk/*` packages internally), cleared the transitive `uuid` issue, and bumped `aws-cdk-lib` 2.200.1 → 2.257.0 to pull a fixed `fast-uri`
+- Added `AwsSolutions-COG8` to the cdk-nag suppression list (new rule introduced with the cdk-nag/cdk-lib bump that requires the Cognito Plus feature plan, not appropriate for a prototype)
+- Remaining `deploy` `brace-expansion` moderate is bundled inside `aws-cdk-lib`'s tarball and is not reachable via npm overrides — needs an upstream CDK release
+
 ## 1.0.13
 
 - Pinned `@byomakase/omakase-player` to exact version `0.20.0` after bisecting a clip editor playback regression: 0.21–0.22 fail to load duration or play, 0.24+ load duration but show black video. Same MediaPackage V2 CMAF manifests play in other browser players, so the regression is upstream
