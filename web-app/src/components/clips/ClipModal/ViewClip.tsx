@@ -293,7 +293,6 @@ const ViewClip: React.FC<ViewClipProps> = ({
     // Status indicator renderer
     const renderClipStatus = (status: string | undefined) => {
         const statusConfig: any = {
-            published: { type: "success" as const, text: "Published" },
             reviewed: { type: "success" as const, text: "Reviewed" },
             ended: { type: "info" as const, text: "Ended" },
             scheduled: { type: "pending" as const, text: "Scheduled" },

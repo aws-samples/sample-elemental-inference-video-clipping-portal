@@ -29,10 +29,8 @@ interface ClipsListProps {
     loading?: boolean;
     tableSelection?: "multi" | "single";
     showActions?: boolean;
-    showPublish?: boolean;
     showDownload?: boolean;
     showEditedOnly?: boolean;
-    onPublishClips?: () => void;
     onViewClip?: (clip: Clip) => void;
     onEditClip?: (clip: Clip) => void;
     onFeedbackClip?: (clip: Clip) => void;
@@ -49,10 +47,8 @@ const ClipsList: React.FC<ClipsListProps> = ({
     loading = false,
     tableSelection,
     showActions,
-    showPublish=false,
     showDownload=false,
     showEditedOnly=false,
-    onPublishClips,
     onViewClip,
     onEditClip,
     onFeedbackClip,
@@ -216,7 +212,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
     const renderStatus = (clip: Clip) => {
         if (clip?.status) {
             const statusConfig = {
-                published: { type: "success" as const, text: "Published" },
                 reviewed: { type: "success" as const, text: "Reviewed" },
                 ended: { type: "info" as const, text: "Ended" },
                 processing: { type: "pending" as const, text: "Processing" },
@@ -548,15 +543,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
                                 ariaLabel="Prepare Download"
                             >
                                 Prepare Download
-                            </Button>}
-                            {showPublish && <Button
-                                disabled={selectedClips.length === 0 || selectedClips.some((clip: Clip) => !clip.downloadJobId)}
-                                variant="primary"
-                                iconName={"upload"}
-                                onClick={onPublishClips}
-                                ariaLabel="Publish Clips"
-                            >
-                                Publish Clips
                             </Button>}
                         </SpaceBetween>
                     }

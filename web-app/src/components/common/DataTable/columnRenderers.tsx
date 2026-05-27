@@ -24,7 +24,6 @@ export const renderClipStatus = (status: ClipStatus) => {
     review_in_progress: { color: 'severity-medium' as const, text: 'Review In Progress' },
     discarded: { color: 'red' as const, text: 'Discarded' },
     reviewed: { color: 'green' as const, text: 'Reviewed' },
-    published: { color: 'green' as const, text: 'Published' },
     scheduled: { color: 'grey' as const, text: 'Scheduled' },
     processing: { color: 'severity-low' as const, text: 'Processing' },
   };

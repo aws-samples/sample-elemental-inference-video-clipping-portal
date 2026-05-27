@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.16
+
+- Removed the "Publish Clips" button from the clips list — it only flipped a `status: "published"` field that nothing else in the app reacted to (no S3 push, no public URL, no downstream notification), and the matching status filter that surfaced it was already removed in v1.0.10
+- Cleaned up the related plumbing: `showPublish` / `onPublishClips` props on `ClipsList`, `handlePublishClips` in `HomePage`, the `"published"` entries in `renderClipStatus` (ClipsList, ViewClip, shared columnRenderers), and `"published"` from the `ClipStatus` type union in both `web-app/types/index.ts` and `api/src/clips/index.ts`
+
 ## 1.0.15
 
 - Root-level `npm run deploy` now runs `python3 build.py` before invoking CDK so the deployment always picks up the latest web-app/api builds — previously stale `web-app/dist` content could be uploaded if the user forgot to build first

@@ -60,7 +60,6 @@ interface Clip {
         | "edit_in_progress"
         | "discarded"
         | "reviewed"
-        | "published"
         | "scheduled";
     resolution: string;
     format: string;
