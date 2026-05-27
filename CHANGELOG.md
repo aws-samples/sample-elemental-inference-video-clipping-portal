@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.13
+
+- Pinned `@byomakase/omakase-player` to exact version `0.20.0` after bisecting a clip editor playback regression: 0.21–0.22 fail to load duration or play, 0.24+ load duration but show black video. Same MediaPackage V2 CMAF manifests play in other browser players, so the regression is upstream
+- Documented the pin and accepted axios transitive-vulnerability exposure in `web-app/DEPENDENCY_PINS.md`, with a bisect table for future revisits
+- Ran `npm audit fix` to upgrade `js-cookie` (transitive via Amplify) past advisory GHSA-qjx8-664m-686j, leaving only the documented axios transitive advisories outstanding
+
 ## 1.0.12
 
 - Improved the clip editor's behavior when opening a clip that hasn't been harvested yet: instead of rendering a broken Omakase player with a brief "Preparing Content" flash, the page now shows a clear info panel explaining that a harvest has been initiated, what orientations are missing, and roughly how long to wait
