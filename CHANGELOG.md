@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.10
+
+- Removed the redundant "All Key Moments" status filter dropdown from the clips list — the Harvest Status column already exposes a built-in filter, and the dropdown's option list was out of sync with the actual statuses the codebase produces (no entries for `archived` or `detected`, stale entries for `Processing`/`Completed`/`Reviewed`/`Published` etc.)
+
 ## 1.0.9
 
 - Fixed clip Harvest Status column staying on "Pending" after manual prepare-download: the download workflow now promotes `clip.status` from a pre-harvest state (`detected`/`original`/`processing`/`failed`) to `archived` once a harvest branch completes, mirroring what auto-harvest already does via `harvest-validate`'s `finalize_auto_harvest` action

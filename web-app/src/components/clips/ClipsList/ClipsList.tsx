@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Badge, Box, Button, Container, Header, Link, Modal, Select, SpaceBetween, StatusIndicator, } from "@cloudscape-design/components";
+import { Alert, Badge, Box, Button, Container, Header, Link, Modal, SpaceBetween, StatusIndicator, } from "@cloudscape-design/components";
 import { DataTable, TableColumn, useTableState } from "../../common/DataTable";
 import { Clip } from "../../../types";
 import { Copy, Download, Lock, SquarePen, Tag, Trash2, Unlock } from "lucide-react";
@@ -63,10 +63,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
 }) => {
     // Search and filter state
     const [searchText] = useState("");
-    const [statusFilter, setStatusFilter] = useState<{ label: string; value: string }>({
-        label: "All Key Moments",
-        value: "all",
-    });
     const [downloadingClips, setDownloadingClips] = useState<Set<string>>(new Set());
     const [downloadStatuses, setDownloadStatuses] = useState<Map<string, DownloadStatus>>(new Map());
     const [requestingDownload, setRequestingDownload] = useState(false);
@@ -182,20 +178,7 @@ const ClipsList: React.FC<ClipsListProps> = ({
         }
     };
 
-    // Status filter options
-    const statusFilterOptions = [
-        { label: "All Key Moments", value: "all" },
-        { label: "Processing", value: "processing" },
-        { label: "Original", value: "original" },
-        { label: "Completed", value: "completed" },
-        { label: "Modified", value: "modified" },
-        { label: "Review In Progress", value: "review_in_progress" },
-        { label: "Discarded", value: "discarded" },
-        { label: "Reviewed", value: "reviewed" },
-        { label: "Published", value: "published" },
-    ];
-
-    // Filter and sort clips based on search text and status filter
+    // Filter and sort clips based on search text
     const filteredClips = useMemo(() => {
         let filtered = clips;
 
@@ -203,11 +186,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
         if (searchText) {
             const searchLower = searchText.toLowerCase();
             filtered = filtered.filter((clip) => clip.name.toLowerCase().includes(searchLower));
-        }
-
-        // Apply status filter
-        if (statusFilter.value !== "all") {
-            filtered = filtered.filter((event) => event.status === statusFilter.value);
         }
 
         // Sort by createdAt (latest first)
@@ -233,7 +211,7 @@ const ClipsList: React.FC<ClipsListProps> = ({
             }).filter(( clip: Clip ) => !clip.originalAssetId);
         }
         return filtered;
-    }, [clips, searchText, showEditedOnly, statusFilter.value]);
+    }, [clips, searchText, showEditedOnly]);
     // Status indicator renderer
     const renderStatus = (clip: Clip) => {
         if (clip?.status) {
@@ -608,7 +586,7 @@ const ClipsList: React.FC<ClipsListProps> = ({
                         <Box textAlign="center" color="inherit">
                             <b>No clips found</b>
                             <Box padding={{ bottom: "s" }} variant="p" color="inherit">
-                                {searchText || statusFilter.value !== "all"
+                                {searchText
                                     ? "No clips match your search criteria. Try adjusting your filters."
                                     : "No clips to display."}
                             </Box>
@@ -616,26 +594,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
                     }
                     ariaLabel="Key moments table"
                     filtering={filtering}
-                    statusFilter={
-                        <div style={{ width: 200 }}>
-                            <Select
-                                selectedOption={statusFilter}
-                                onChange={({ detail }) => {
-                                    if (detail.selectedOption) {
-                                        setStatusFilter(
-                                            detail.selectedOption as {
-                                                label: string;
-                                                value: string;
-                                            },
-                                        );
-                                    }
-                                }}
-                                options={statusFilterOptions}
-                                placeholder="Filter by status"
-                                ariaLabel="Filter clips by status"
-                            />
-                        </div>
-                    }
                     tableSelection={tableSelection ?? "multi"}
                     onSelectionChange={onSelectionChange}
                 />
