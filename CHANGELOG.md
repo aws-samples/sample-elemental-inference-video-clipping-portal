@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.15
+
+- Root-level `npm run deploy` now runs `python3 build.py` before invoking CDK so the deployment always picks up the latest web-app/api builds — previously stale `web-app/dist` content could be uploaded if the user forgot to build first
+- Added `npm run deploy.skip-build` as an escape hatch retaining the old behavior for cases where nothing has changed since the last build
+- Updated `DEPLOYMENT_GUIDE.md` Sections 3 and 4 to reflect that the standalone build step is now optional
+
 ## 1.0.14
 
 - Cleared the `api` package npm audit (1 moderate → 0): removed the unused `uuid` and `@types/uuid` declarations — Lambdas use `require("crypto").randomUUID()` directly
