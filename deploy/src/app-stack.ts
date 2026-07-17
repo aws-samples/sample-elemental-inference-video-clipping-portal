@@ -126,6 +126,7 @@ export class AppStack extends cdk.Stack {
         // Create Jobs API Lambda Function (for API Gateway)
         const jobsApiFunction = new cdk.aws_lambda_nodejs.NodejsFunction(this, "JobsApiFunction", {
             runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "handler",
             entry: "../api/src/jobs-api/index.ts",
             depsLockFilePath: "../api/package-lock.json",
@@ -195,6 +196,7 @@ export class AppStack extends cdk.Stack {
         // Events Lambda Function
         const eventsFunction = new cdk.aws_lambda_nodejs.NodejsFunction(this, "EventsFunction", {
             runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "handler",
             entry: "../api/src/events/index.ts",
             depsLockFilePath: "../api/package-lock.json",
@@ -317,6 +319,7 @@ export class AppStack extends cdk.Stack {
         // Clips Lambda Function
         const clipsFunction = new cdk.aws_lambda_nodejs.NodejsFunction(this, "ClipsFunction", {
             runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "handler",
             entry: "../api/src/clips/index.ts",
             depsLockFilePath: "../api/package-lock.json",
@@ -412,6 +415,7 @@ export class AppStack extends cdk.Stack {
             "TemplatesFunction",
             {
                 runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+                architecture: cdk.aws_lambda.Architecture.ARM_64,
                 handler: "handler",
                 entry: "../api/src/templates/index.ts",
                 depsLockFilePath: "../api/package-lock.json",
@@ -590,7 +594,7 @@ export class AppStack extends cdk.Stack {
             depsLockFilePath: "../api/package-lock.json",
             timeout: cdk.Duration.seconds(30),
             memorySize: 256,
-            architecture: cdk.aws_lambda.Architecture.X86_64,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             environment: {
                 MEDIALIVE_API_CLIENT_FUNCTION_NAME: medialiveClient.mediaLiveApiClientFunction.functionName,
             },
