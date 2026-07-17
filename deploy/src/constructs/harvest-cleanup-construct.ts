@@ -3,7 +3,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import { createPythonFunction } from "./python-function";
 import { Construct } from "constructs";
 
 export interface HarvestCleanupConstructProps {
@@ -14,15 +14,13 @@ export interface HarvestCleanupConstructProps {
 }
 
 export class HarvestCleanupConstruct extends Construct {
-    public readonly cleanupFunction: lambdaPython.PythonFunction;
+    public readonly cleanupFunction: lambda.Function;
 
     constructor(scope: Construct, id: string, props: HarvestCleanupConstructProps) {
         super(scope, id);
 
-        this.cleanupFunction = new lambdaPython.PythonFunction(this, "CleanupFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.cleanupFunction = createPythonFunction(this, "CleanupFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/harvest-cleanup",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(5),
