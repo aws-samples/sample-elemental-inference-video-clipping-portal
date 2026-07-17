@@ -15,7 +15,7 @@
 
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import { createPythonFunction } from "./python-function";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { NagSuppressions } from "cdk-nag";
 import { Construct } from "constructs";
@@ -27,7 +27,7 @@ export interface MediaLiveLambdaConstructProps {
 }
 
 export class MediaLiveLambdaConstruct extends Construct {
-    public readonly mediaLiveApiClientFunction: lambdaPython.PythonFunction;
+    public readonly mediaLiveApiClientFunction: lambda.Function;
     public readonly mediaLiveServiceRole: iam.Role;
 
     constructor(scope: Construct, id: string, props: MediaLiveLambdaConstructProps) {
@@ -37,15 +37,14 @@ export class MediaLiveLambdaConstruct extends Construct {
         this.mediaLiveServiceRole = this.createMediaLiveServiceRole(props.stackName);
 
         // Create MediaLive API Client Lambda Function
-        this.mediaLiveApiClientFunction = new lambdaPython.PythonFunction(
+        this.mediaLiveApiClientFunction = createPythonFunction(
             this,
             "MediaLiveApiClientFn",
             {
                 functionName: `${props.stackName}-medialive-api-client`,
-                runtime: lambda.Runtime.PYTHON_3_12,
-                handler: "lambda_handler",
-                index: "main.py",
+                handler: "main.lambda_handler",
                 entry: "../api/src/medialive-api-client",
+                architecture: lambda.Architecture.ARM_64,
                 timeout: cdk.Duration.seconds(30),
                 memorySize: 256,
                 environment: {

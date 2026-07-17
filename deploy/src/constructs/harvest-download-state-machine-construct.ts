@@ -4,7 +4,7 @@ import * as cdk from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as stepfunctions from "aws-cdk-lib/aws-stepfunctions";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import { createPythonFunction } from "./python-function";
 import { Construct } from "constructs";
 
 export interface HarvestDownloadStateMachineConstructProps {
@@ -23,11 +23,11 @@ export interface HarvestDownloadStateMachineConstructProps {
 export class HarvestDownloadStateMachineConstruct extends Construct {
     public readonly downloadStateMachineArn: string;
     public readonly autoHarvestStateMachineArn: string;
-    public readonly harvestTaskFunction: lambdaPython.PythonFunction;
-    public readonly harvestPollFunction: lambdaPython.PythonFunction;
-    public readonly harvestValidateFunction: lambdaPython.PythonFunction;
-    public readonly transcodeTaskFunction: lambdaPython.PythonFunction;
-    public readonly transcodePollFunction: lambdaPython.PythonFunction;
+    public readonly harvestTaskFunction: lambda.Function;
+    public readonly harvestPollFunction: lambda.Function;
+    public readonly harvestValidateFunction: lambda.Function;
+    public readonly transcodeTaskFunction: lambda.Function;
+    public readonly transcodePollFunction: lambda.Function;
 
     constructor(scope: Construct, id: string, props: HarvestDownloadStateMachineConstructProps) {
         super(scope, id);
@@ -43,10 +43,8 @@ export class HarvestDownloadStateMachineConstruct extends Construct {
 
         // --- Task Lambdas ---
 
-        this.harvestTaskFunction = new lambdaPython.PythonFunction(this, "HarvestTaskFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.harvestTaskFunction = createPythonFunction(this, "HarvestTaskFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/harvest-task",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(1),
@@ -62,10 +60,8 @@ export class HarvestDownloadStateMachineConstruct extends Construct {
             },
         });
 
-        this.harvestPollFunction = new lambdaPython.PythonFunction(this, "HarvestPollFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.harvestPollFunction = createPythonFunction(this, "HarvestPollFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/harvest-poll",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(30),
@@ -75,10 +71,8 @@ export class HarvestDownloadStateMachineConstruct extends Construct {
             },
         });
 
-        this.harvestValidateFunction = new lambdaPython.PythonFunction(this, "HarvestValidateFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.harvestValidateFunction = createPythonFunction(this, "HarvestValidateFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/harvest-validate",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(1),
@@ -90,10 +84,8 @@ export class HarvestDownloadStateMachineConstruct extends Construct {
             },
         });
 
-        this.transcodeTaskFunction = new lambdaPython.PythonFunction(this, "TranscodeTaskFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.transcodeTaskFunction = createPythonFunction(this, "TranscodeTaskFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/transcode-task",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(30),
@@ -105,10 +97,8 @@ export class HarvestDownloadStateMachineConstruct extends Construct {
             },
         });
 
-        this.transcodePollFunction = new lambdaPython.PythonFunction(this, "TranscodePollFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.transcodePollFunction = createPythonFunction(this, "TranscodePollFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/transcode-poll",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(30),

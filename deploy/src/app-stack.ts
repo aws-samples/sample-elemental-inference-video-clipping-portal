@@ -16,7 +16,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as cdk from "aws-cdk-lib";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import { createPythonFunction } from "./constructs/python-function";
 import { Construct } from "constructs";
 
 import { ApiGatewayV2CloudFrontConstruct } from "./constructs/apigatewayv2-cloudfront-construct";
@@ -255,11 +255,9 @@ export class AppStack extends cdk.Stack {
         });
 
         // Channels Lambda Function (Python - for native Elemental Inference SDK support)
-        const channelsFunction = new lambdaPython.PythonFunction(this, "ChannelsFunction", {
+        const channelsFunction = createPythonFunction(this, "ChannelsFunction", {
             functionName: `${this.stackName}-channels-api`,
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+            handler: "main.lambda_handler",
             entry: "../api/src/channels-python",
             architecture: cdk.aws_lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(5),
@@ -636,11 +634,9 @@ export class AppStack extends cdk.Stack {
         channelsFunction.addEnvironment("MEDIALIVE_API_CLIENT_FUNCTION_NAME", medialiveClient.mediaLiveApiClientFunction.functionName);
 
         // Create Feed Lambda (invoked by Step Functions for Elemental Inference feed operations)
-        const createFeedFunction = new lambdaPython.PythonFunction(this, "CreateFeedFunction", {
+        const createFeedFunction = createPythonFunction(this, "CreateFeedFunction", {
             functionName: `${this.stackName}-create-feed`,
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+            handler: "main.lambda_handler",
             entry: "../api/src/create-feed-lambda",
             architecture: cdk.aws_lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(2),
@@ -787,11 +783,9 @@ export class AppStack extends cdk.Stack {
         createFeedFunction.grantInvoke(eventsFunction);
 
         // Auto-Activate Scheduler Lambda (runs every minute via EventBridge)
-        const autoActivateScheduler = new lambdaPython.PythonFunction(this, "AutoActivateScheduler", {
+        const autoActivateScheduler = createPythonFunction(this, "AutoActivateScheduler", {
             functionName: `${this.stackName}-auto-activate-scheduler`,
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+            handler: "main.lambda_handler",
             entry: "../api/src/auto-activate-scheduler",
             architecture: cdk.aws_lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(60),

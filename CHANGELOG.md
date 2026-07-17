@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.17
+
+- Migrated all 13 Python Lambdas off the experimental `@aws-cdk/aws-lambda-python-alpha` package onto a small `createPythonFunction` helper built on stable `aws-cdk-lib` APIs (`lambda.Function` + `Code.fromAsset` bundling); removed the alpha dependency from `deploy/package.json`
+- Standardized the MediaLive API client Lambda onto ARM64 — it was the only Python function defaulting to X86_64, so all Python Lambdas now run on Graviton
+- Pinned the bundling image platform to the target architecture so any future native-wheel dependency resolves correctly
+
 ## 1.0.16
 
 - Removed the "Publish Clips" button from the clips list — it only flipped a `status: "published"` field that nothing else in the app reacted to (no S3 push, no public URL, no downstream notification), and the matching status filter that surfaced it was already removed in v1.0.10
