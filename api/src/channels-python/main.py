@@ -332,7 +332,7 @@ def handle_create_channel(event: Dict[str, Any]) -> Dict[str, Any]:
 # Smart Subtitles validation (mirrors create-feed-lambda / smart_subtitles.py)
 _VALID_SUBTITLE_LANGUAGES = {"eng", "eng-au", "eng-gb", "eng-us", "fra", "ita", "deu", "spa", "por"}
 _VALID_PROFANITY_MODES = {"DISABLED", "CENSOR", "DROP"}
-_VALID_SYNC_MODES = {"DELAY_VIDEO", "SYNCED"}
+_VALID_SYNC_MODES = {"VIDEO_ALIGNED_CAPTIONS", "NO_VIDEO_DELAY"}
 
 
 def _normalize_subtitles(raw: Any) -> Dict[str, Any]:

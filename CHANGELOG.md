@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.24
+
+- Refined the Smart Subtitles caption description to match validated MediaLive settings: `TtmlDestinationSettings.StyleControl` set to `USE_CONFIGURED` and added `Accessibility: DOES_NOT_IMPLEMENT_ACCESSIBILITY_FEATURES`
+- Backend Smart Subtitles path now confirmed working end-to-end against live MediaLive/MediaPackage V2 (channel creates, TTML caption track ingests, manifest carries subtitles)
+
+## 1.0.23
+
+- Fixed MediaPackage V2 rejecting the caption segment ingest with HTTP 400: switched the Smart Subtitles caption description from WebVTT to TTML (`TtmlDestinationSettings` with `StyleControl: PASSTHROUGH`) — MediaPackage V2 / CMAF Ingest output groups require TTML; WebVTT is only valid for HLS / MediaPackage V1
+- Updated `smart_subtitles.py`, its tests, and the Create Channel form wording accordingly
+
+## 1.0.22
+
+- Fixed Smart Subtitles channel creation failing with "Invalid enum value 'DELAY_VIDEO'": corrected `CaptionSynchronizationMode` to the actual MediaLive enum values `VIDEO_ALIGNED_CAPTIONS` (default) and `NO_VIDEO_DELAY` in `smart_subtitles.py` and the `channels-python` validator; updated tests. Live channel creation confirmed the rest of the caption wiring (selector, WebVTT description, caption output) is structurally correct
+
 ## 1.0.21
 
 - Smart Subtitles (web form): the Create Channel modal now has an "Enable Smart Subtitles" toggle and a language picker (9 supported languages), shown only when enabled; the selection flows into the `subtitles` object the channels API accepts

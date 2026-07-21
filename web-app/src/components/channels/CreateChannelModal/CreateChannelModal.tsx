@@ -339,7 +339,7 @@ const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
           <FormField
             label="Smart Subtitles"
-            description="Generate live subtitles from the audio using AWS Elemental Inference. Subtitles are added as a WebVTT track on the channel output."
+            description="Generate live subtitles from the audio using AWS Elemental Inference. Subtitles are added as a caption track on the channel output."
           >
             <Toggle
               checked={formData.subtitlesEnabled}

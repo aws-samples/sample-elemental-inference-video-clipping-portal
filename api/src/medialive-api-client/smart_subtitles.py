@@ -8,7 +8,8 @@ three pieces MediaLive needs to consume Elemental Inference Smart Subtitles:
 1. A caption selector on each input attachment, whose SmartSubtitleSourceSettings
    references the Inference feed's subtitling output by name.
 2. A caption description in the encoder settings that references that selector and
-   emits WebVTT.
+   emits TTML (required by MediaPackage V2 / CMAF Ingest; WebVTT is only valid for
+   HLS / MediaPackage V1 output groups).
 3. A caption output in each MediaPackage output group referencing the description.
 
 The transform is an *idempotent merge*: it operates on deep copies, skips pieces
@@ -32,8 +33,11 @@ CAPTION_SELECTOR_NAME = "smart-subtitles"
 CAPTION_DESCRIPTION_NAME = "smart-subtitles"
 CAPTION_OUTPUT_NAME = "captions"
 
-DEFAULT_SYNC_MODE = "DELAY_VIDEO"
-VALID_SYNC_MODES = {"DELAY_VIDEO", "SYNCED"}
+# MediaLive CaptionSynchronizationMode enum values:
+#   VIDEO_ALIGNED_CAPTIONS - delay video so captions stay aligned (default; best for VOD/clipping)
+#   NO_VIDEO_DELAY         - no video delay; captions may lag (lower latency)
+DEFAULT_SYNC_MODE = "VIDEO_ALIGNED_CAPTIONS"
+VALID_SYNC_MODES = {"VIDEO_ALIGNED_CAPTIONS", "NO_VIDEO_DELAY"}
 
 
 def _iso639_2(language: str) -> str:
@@ -82,7 +86,15 @@ def _add_caption_description(
                 "Name": CAPTION_DESCRIPTION_NAME,
                 "CaptionSelectorName": CAPTION_SELECTOR_NAME,
                 "LanguageCode": language_code,
-                "DestinationSettings": {"WebvttDestinationSettings": {}},
+                "Accessibility": "DOES_NOT_IMPLEMENT_ACCESSIBILITY_FEATURES",
+                # MediaPackage V2 / CMAF Ingest output groups require TTML captions
+                # (WebVTT is only for HLS / MediaPackage V1). Sending WebVTT here
+                # causes MediaPackage to reject the caption segment ingest with HTTP 400.
+                # StyleControl USE_CONFIGURED emits the styling MediaLive derives for
+                # the generated subtitles rather than passing through source styling.
+                "DestinationSettings": {
+                    "TtmlDestinationSettings": {"StyleControl": "USE_CONFIGURED"}
+                },
             }
         )
     return encoder_settings
@@ -129,7 +141,7 @@ def apply_smart_subtitles(
         {
             "enabled": true,
             "language": "eng-us",                        # required when enabled
-            "captionSynchronizationMode": "DELAY_VIDEO"  # optional; DELAY_VIDEO | SYNCED
+            "captionSynchronizationMode": "VIDEO_ALIGNED_CAPTIONS"  # optional; VIDEO_ALIGNED_CAPTIONS | NO_VIDEO_DELAY
         }
     """
     if not subtitles or not subtitles.get("enabled"):

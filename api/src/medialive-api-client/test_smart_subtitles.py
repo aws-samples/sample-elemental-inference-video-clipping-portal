@@ -75,7 +75,7 @@ class TestCaptionSelector:
         assert sel["LanguageCode"] == "eng"  # region subtag stripped
         sss = sel["SelectorSettings"]["SmartSubtitleSourceSettings"]
         assert sss["InferenceFeedOutput"] == SUBTITLING_FEED_OUTPUT
-        assert sss["CaptionSynchronizationMode"] == "DELAY_VIDEO"
+        assert sss["CaptionSynchronizationMode"] == "VIDEO_ALIGNED_CAPTIONS"
 
     def test_existing_input_settings_preserved(self):
         ia, _ = apply_smart_subtitles(_input_attachments(), _encoder_settings(),
@@ -85,10 +85,10 @@ class TestCaptionSelector:
     def test_sync_mode_override(self):
         ia, _ = apply_smart_subtitles(
             _input_attachments(), _encoder_settings(),
-            {"enabled": True, "language": "deu", "captionSynchronizationMode": "SYNCED"},
+            {"enabled": True, "language": "deu", "captionSynchronizationMode": "NO_VIDEO_DELAY"},
         )
         sss = ia[0]["InputSettings"]["CaptionSelectors"][0]["SelectorSettings"]["SmartSubtitleSourceSettings"]
-        assert sss["CaptionSynchronizationMode"] == "SYNCED"
+        assert sss["CaptionSynchronizationMode"] == "NO_VIDEO_DELAY"
 
 
 class TestCaptionDescriptionAndOutput:
@@ -100,7 +100,9 @@ class TestCaptionDescriptionAndOutput:
         assert descs[0]["Name"] == CAPTION_DESCRIPTION_NAME
         assert descs[0]["CaptionSelectorName"] == CAPTION_SELECTOR_NAME
         assert descs[0]["LanguageCode"] == "eng"
-        assert "WebvttDestinationSettings" in descs[0]["DestinationSettings"]
+        assert descs[0]["Accessibility"] == "DOES_NOT_IMPLEMENT_ACCESSIBILITY_FEATURES"
+        assert "TtmlDestinationSettings" in descs[0]["DestinationSettings"]
+        assert descs[0]["DestinationSettings"]["TtmlDestinationSettings"]["StyleControl"] == "USE_CONFIGURED"
 
     def test_caption_output_added_to_mediapackage_group(self):
         _, es = apply_smart_subtitles(_input_attachments(), _encoder_settings(),
