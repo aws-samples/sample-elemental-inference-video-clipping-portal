@@ -264,6 +264,14 @@ def handle_create_channel(event: Dict[str, Any]) -> Dict[str, Any]:
         channel_name = request["channelName"]
         logger.info("Starting channel creation workflow", extra={"channel_name": channel_name})
 
+        # Validate and normalize the optional Smart Subtitles config. Always resolves
+        # to a dict (defaulting to disabled) so the state machine can reference
+        # $.subtitles unconditionally.
+        try:
+            subtitles = _normalize_subtitles(request.get("subtitles"))
+        except ValueError as ve:
+            return _response(400, {"error": str(ve)})
+
         # Resolve channel group name
         channel_group_name = _get_channel_group_name()
 
@@ -287,6 +295,7 @@ def handle_create_channel(event: Dict[str, Any]) -> Dict[str, Any]:
             "inputType": request["inputType"],
             "inputSources": input_sources,
             "encoderSettings": request["encoderSettings"],
+            "subtitles": subtitles,
             "region": AWS_REGION,
         }
 
@@ -319,6 +328,66 @@ def handle_create_channel(event: Dict[str, Any]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
+# Smart Subtitles validation (mirrors create-feed-lambda / smart_subtitles.py)
+_VALID_SUBTITLE_LANGUAGES = {"eng", "eng-au", "eng-gb", "eng-us", "fra", "ita", "deu", "spa", "por"}
+_VALID_PROFANITY_MODES = {"DISABLED", "CENSOR", "DROP"}
+_VALID_SYNC_MODES = {"DELAY_VIDEO", "SYNCED"}
+
+
+def _normalize_subtitles(raw: Any) -> Dict[str, Any]:
+    """
+    Validate and normalize the optional `subtitles` request field.
+
+    Returns a dict that always carries an `enabled` flag. When disabled/absent,
+    returns {"enabled": False}. When enabled, validates language and optional
+    fields and raises ValueError on invalid input.
+    """
+    if not raw or not raw.get("enabled"):
+        return {"enabled": False}
+
+    language = raw.get("language")
+    if language not in _VALID_SUBTITLE_LANGUAGES:
+        raise ValueError(
+            f"subtitles.language must be one of {sorted(_VALID_SUBTITLE_LANGUAGES)}"
+        )
+
+    normalized: Dict[str, Any] = {"enabled": True, "language": language}
+
+    sync_mode = raw.get("captionSynchronizationMode")
+    if sync_mode is not None:
+        if sync_mode not in _VALID_SYNC_MODES:
+            raise ValueError(
+                f"subtitles.captionSynchronizationMode must be one of {sorted(_VALID_SYNC_MODES)}"
+            )
+        normalized["captionSynchronizationMode"] = sync_mode
+
+    profanity = raw.get("profanityFilter")
+    if profanity is not None:
+        if profanity not in _VALID_PROFANITY_MODES:
+            raise ValueError(
+                f"subtitles.profanityFilter must be one of {sorted(_VALID_PROFANITY_MODES)}"
+            )
+        normalized["profanityFilter"] = profanity
+
+    aspect = raw.get("aspectRatio")
+    if aspect is not None:
+        try:
+            normalized["aspectRatio"] = {
+                "width": int(aspect["width"]),
+                "height": int(aspect["height"]),
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                "subtitles.aspectRatio must contain integer 'width' and 'height'"
+            ) from exc
+
+    dictionary = raw.get("dictionary")
+    if dictionary:
+        normalized["dictionary"] = dictionary
+
+    return normalized
+
 
 def _get_channel_group_name() -> str:
     """

@@ -27,6 +27,7 @@ from aws_lambda_powertools.metrics import MetricUnit
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
 from medialive_client import MediaLiveClient, MediaLiveAPIError, InputBusyError
+from smart_subtitles import apply_smart_subtitles
 from models import (
     CreateChannelRequest, UpdateChannelRequest, DeleteChannelRequest,
     StartChannelRequest, StopChannelRequest, CreateInputRequest,
@@ -135,13 +136,23 @@ def handle_create_channel(client: MediaLiveClient, params: Dict[str, Any]) -> Di
         # Use environment variable for RoleArn if not provided
         if 'RoleArn' not in params or not params['RoleArn']:
             params['RoleArn'] = MEDIALIVE_SERVICE_ROLE_ARN
-        
+
+        # Pop the Smart Subtitles config (not a MediaLive API field) before building
+        # the request, then merge the caption selector/description/output into the
+        # channel definition. Idempotent no-op when subtitles is absent/disabled.
+        subtitles = params.pop('subtitles', None) or params.pop('Subtitles', None)
+        input_attachments = params.get('InputAttachments') or params.get('input_attachments')
+        encoder_settings = params.get('EncoderSettings') or params.get('encoder_settings')
+        input_attachments, encoder_settings = apply_smart_subtitles(
+            input_attachments, encoder_settings, subtitles
+        )
+
         # Support both PascalCase (from channels Lambda) and snake_case params
         request = CreateChannelRequest(
             name=params.get('Name') or params.get('name'),
-            input_attachments=params.get('InputAttachments') or params.get('input_attachments'),
+            input_attachments=input_attachments,
             destinations=params.get('Destinations') or params.get('destinations'),
-            encoder_settings=params.get('EncoderSettings') or params.get('encoder_settings'),
+            encoder_settings=encoder_settings,
             channel_class=params.get('ChannelClass') or params.get('channel_class', 'STANDARD'),
             role_arn=params.get('RoleArn') or params.get('role_arn'),
             tags=params.get('Tags') or params.get('tags')
@@ -151,7 +162,8 @@ def handle_create_channel(client: MediaLiveClient, params: Dict[str, Any]) -> Di
         standard_keys = {
             'Name', 'name', 'InputAttachments', 'input_attachments',
             'Destinations', 'destinations', 'EncoderSettings', 'encoder_settings',
-            'ChannelClass', 'channel_class', 'RoleArn', 'role_arn', 'Tags', 'tags'
+            'ChannelClass', 'channel_class', 'RoleArn', 'role_arn', 'Tags', 'tags',
+            'subtitles', 'Subtitles'
         }
         extra_kwargs = {k: v for k, v in params.items() if k not in standard_keys}
         

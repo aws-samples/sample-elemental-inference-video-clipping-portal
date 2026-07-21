@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.19
+
+- Smart Subtitles (backend, part 1): `create-feed-lambda` now accepts an optional `subtitles` config and adds an ENABLED Elemental Inference `subtitling-output` (language, aspect ratio, dictionary, profanity filter) alongside the clipping output; preserved across the clipping enable/disable lifecycle
+- Pinned `boto3>=1.43.0` in the `create-feed-lambda` and `medialive-api-client` requirements — the verified minimum SDK version that includes the Elemental Inference `SubtitlingConfig` and MediaLive `SmartSubtitleSourceSettings` models (1.42.97 lacks both)
+- Added 7 unit tests covering the subtitling output (enable/disable, validation of language/profanity/aspect ratio, backward compatibility)
+
 ## 1.0.18
 
 - Standardized all application Node.js Lambdas on ARM64 (Graviton): added `architecture: ARM_64` to JobsApi, Events, Clips, Templates, and SystemSettings functions, and flipped MedialiveStatus from X86_64 to ARM64 — previously 6 of 7 Node functions ran on x86
