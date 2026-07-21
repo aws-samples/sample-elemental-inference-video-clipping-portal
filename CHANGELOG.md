@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.21
+
+- Smart Subtitles (web form): the Create Channel modal now has an "Enable Smart Subtitles" toggle and a language picker (9 supported languages), shown only when enabled; the selection flows into the `subtitles` object the channels API accepts
+- Extended `ChannelFormState` with `subtitlesEnabled` / `subtitleLanguage` and `apiService.createChannel` with an optional `subtitles` param
+
+## 1.0.20
+
+- Smart Subtitles (backend, part 2 — channel wiring): channel creation now accepts an optional `subtitles` config that flows through the channels API → CreateChannel state machine → both the inference feed and the MediaLive channel
+- Added `api/src/medialive-api-client/smart_subtitles.py`, an idempotent merge transform that injects the caption selector (referencing the feed's subtitling output), a WebVTT caption description, and a caption output into the MediaPackage output group; 15 unit tests
+- `channels-python` validates/normalizes the `subtitles` request field and defaults to disabled so the state machine can always reference `$.subtitles`
+
 ## 1.0.19
 
 - Smart Subtitles (backend, part 1): `create-feed-lambda` now accepts an optional `subtitles` config and adds an ENABLED Elemental Inference `subtitling-output` (language, aspect ratio, dictionary, profanity filter) alongside the clipping output; preserved across the clipping enable/disable lifecycle
