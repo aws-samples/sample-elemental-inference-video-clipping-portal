@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pause, Play } from 'lucide-react';
+import { Captions, CaptionsOff, Pause, Play } from 'lucide-react';
 
 export interface UnifiedControlsProps {
     isPlaying: boolean;
@@ -8,6 +8,11 @@ export interface UnifiedControlsProps {
     onPlay(): void;
     onPause(): void;
     onSeek(time: number): void;
+    /** When true, a captions (CC) toggle button is shown. */
+    captionsAvailable?: boolean;
+    /** Whether captions are currently displayed. */
+    captionsOn?: boolean;
+    onToggleCaptions?(): void;
 }
 
 function formatTime(seconds: number): string {
@@ -26,6 +31,9 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
     onPlay,
     onPause,
     onSeek,
+    captionsAvailable = false,
+    captionsOn = false,
+    onToggleCaptions,
 }) => {
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSeek(Number(e.target.value));
@@ -64,6 +72,28 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
             <span style={{ whiteSpace: 'nowrap', fontSize: '14px' }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
             </span>
+            {captionsAvailable && (
+                <button
+                    type="button"
+                    aria-label={captionsOn ? 'Hide subtitles' : 'Show subtitles'}
+                    aria-pressed={captionsOn}
+                    title={captionsOn ? 'Hide subtitles' : 'Show subtitles'}
+                    onClick={onToggleCaptions}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
+                >
+                    {captionsOn
+                        ? <Captions size={20} color={CLOUDSCAPE_BLUE} />
+                        : <CaptionsOff size={20} color={CLOUDSCAPE_BLUE} />
+                    }
+                </button>
+            )}
         </div>
     );
 };

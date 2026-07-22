@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.25
+
+- Smart Subtitles (web playback): the dual/single channel preview player can now render the TTML caption track carried in the MediaPackage V2 manifest. A CC toggle appears in the player controls only when a subtitle track is detected, and captions default to off until the user opts in
+- `SimpleHlsPlayer` exposes subtitle-track discovery (`onSubtitleTracksUpdated`) and imperative `getSubtitleTracks` / `setSubtitleTrack` methods, backed by hls.js IMSC1 rendering (with a native TextTrack fallback for Safari)
+- `DualPlayerPreview` keeps caption state in sync across the landscape and portrait panes, re-applying the selection when a pane remounts after a view-mode switch
+
 ## 1.0.24
 
 - Refined the Smart Subtitles caption description to match validated MediaLive settings: `TtmlDestinationSettings.StyleControl` set to `USE_CONFIGURED` and added `Accessibility: DOES_NOT_IMPLEMENT_ACCESSIBILITY_FEATURES`
