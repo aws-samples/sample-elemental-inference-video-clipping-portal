@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.28
+
+- Applied non-breaking `npm audit fix` across `web-app`, `deploy`, and `api` (lockfile-only; no `package.json` changes): cleared all fixable high/low advisories, bringing `api` to 0 vulnerabilities and `deploy` to a single upstream-bundled `aws-cdk-lib` transitive
+- Left `@byomakase/omakase-player` pinned at `0.20.0` (its axios high is the documented accepted risk in `DEPENDENCY_PINS.md`; the only "fix" is a breaking major upgrade that regresses the clip editor)
+- Verified `api`/`deploy`/`web-app` builds and the 51 web-app tests still pass after the updates
+
 ## 1.0.27
 
 - Reviewed and corrected the README "How It Works" steps: fixed typos and grammar in the smart subtitles steps, removed a redundant/inaccurate TTML reference, and restored the missing step describing MediaLive sending the landscape and portrait video encodes to MediaPackage
