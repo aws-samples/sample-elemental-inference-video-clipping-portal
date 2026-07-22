@@ -11,17 +11,31 @@ Operators can manage live video channels, automatically detect highlights from l
 
 ## How It Works
 
-![Architecture](screenshots/architecture.png)
+![Architecture](screenshots/architecture2.png)
 
 1. [AWS Elemental MediaLive](https://aws.amazon.com/medialive/) sends the incoming video stream to an associated [AWS Elemental Inference](https://aws.amazon.com/elemental-inference/) feed.
-2. Elemental Inference analyses the video for both smart cropping and event clipping.
+2. Elemental Inference analyses the video for both smart cropping and event clipping, and the audio for smart subtitles.
 3. The smart cropping feature determines key areas of interest. Inference returns the desired cropping coordinates back to the MediaLive channel.
-4. MediaLive uses these coordinates to encode a vertical (portrait) aspect ratio version of the input. It pushes this output, along with other defined resolutions, to [AWS Elemental MediaPackage](https://aws.amazon.com/mediapackage/).
-5. MediaPackage acts as the just-in-time packager (JITP) and serves as the origin for live content.
-6. Inference detects key moments and sends timing details via [Amazon EventBridge](https://aws.amazon.com/eventbridge/).
-7. The demo clipping portal displays these key moments and allows operators to choose and modify which ones to publish. Selected highlights are processed via an [AWS Step Functions](https://aws.amazon.com/step-functions/) state machine, which triggers MediaPackage harvest jobs.
-8. Harvested content is processed by AWS Elemental MediaConvert to create frame-accurate MP4 and/or HLS VOD assets. These assets are stored in [Amazon S3](https://aws.amazon.com/s3/).
-9. An [Amazon CloudFront](https://aws.amazon.com/cloudfront/) distribution is configured with the S3 bucket and MediaPackage channel as origins, serving a combination of live and VOD content to viewers.
+4. MediaLive uses these coordinates to encode a vertical (portrait) aspect ratio version of the input, and sends this output, along with the landscape encode at its defined resolutions, to [AWS Elemental MediaPackage](https://aws.amazon.com/mediapackage/).
+5. The smart subtitles feature uses advanced speech recognition to transcribe the spoken audio, returning the transcription to MediaLive.
+6. MediaLive uses this subtitle data to feed its caption stream, which it sends to MediaPackage as Timed Text Markup Language (TTML).
+7. MediaPackage acts as the just-in-time packager (JITP) and serves as the origin for live content.
+8. Inference detects key moments and sends timing details via [Amazon EventBridge](https://aws.amazon.com/eventbridge/).
+9. The demo clipping portal displays these key moments and allows operators to choose and modify which ones to publish. Selected highlights are processed via an [AWS Step Functions](https://aws.amazon.com/step-functions/) state machine, which triggers MediaPackage harvest jobs.
+10. Harvested content is processed by AWS Elemental MediaConvert to create frame-accurate MP4 and/or HLS VOD assets. These assets are stored in [Amazon S3](https://aws.amazon.com/s3/).
+11. An [Amazon CloudFront](https://aws.amazon.com/cloudfront/) distribution is configured with the S3 bucket and MediaPackage channel as origins, serving a combination of live and VOD content to viewers.
+
+## Architecture Notes
+
+### Combined landscape and portrait output group
+
+As a sample application, this portal makes one deliberate encoding choice that differs from what we would recommend for a production workflow.
+
+The MediaLive channel groups both the landscape encode and the smart-cropped portrait encode into the **same** MediaPackage output group. This is intentional: keeping both orientations in a single manifest makes it straightforward for the portal to load them together and present a synchronized, side-by-side comparison of the two aspect ratios.
+
+In a production implementation we generally recommend separating the landscape and portrait encodes into **different MediaLive output groups**, so that each orientation is delivered as its own logical stream. Combining them as this sample does means the renditions share a single manifest, so a standard adaptive-bitrate player may see them as interchangeable variants and could unintentionally switch between orientations during playback. Avoiding that behaviour would require additional downstream logic or manifest filtering to ensure each player only receives the orientation it is meant to play.
+
+This trade-off is acceptable here because the goal is to evaluate AWS Elemental Inference and demonstrate the side-by-side experience, not to model a production delivery topology.
 
 ## Tech Stack
 

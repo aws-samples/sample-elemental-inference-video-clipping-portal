@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.27
+
+- Reviewed and corrected the README "How It Works" steps: fixed typos and grammar in the smart subtitles steps, removed a redundant/inaccurate TTML reference, and restored the missing step describing MediaLive sending the landscape and portrait video encodes to MediaPackage
+
+## 1.0.26
+
+- Documented the deliberate architecture choice of grouping the landscape and smart-cropped portrait encodes into a single MediaPackage output group: added an "Architecture Notes" section to the README explaining the trade-off versus the recommended production approach of separating orientations into different MediaLive output groups
+
 ## 1.0.25
 
 - Smart Subtitles (web playback): the dual/single channel preview player can now render the TTML caption track carried in the MediaPackage V2 manifest. A CC toggle appears in the player controls only when a subtitle track is detected, and captions default to off until the user opts in
