@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.29
+
+- Removed the per-event icons from the Key Moments (clips) list, which rendered inconsistently — the name-based icon lookup only matched spelled-out labels, so moments like "3-Pointer" showed no icon. The list now shows just the event name
+- Deleted the `ClipsList` icon logic (`CLIP_TYPE_ICONS` / `getClipIcon`) and the now-unused `dunk.jpeg`, `3-pointer.jpeg`, and `2-pointer.jpeg` assets
+
 ## 1.0.28
 
 - Applied non-breaking `npm audit fix` across `web-app`, `deploy`, and `api` (lockfile-only; no `package.json` changes): cleared all fixable high/low advisories, bringing `api` to 0 vulnerabilities and `deploy` to a single upstream-bundled `aws-cdk-lib` transitive
