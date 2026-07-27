@@ -4,23 +4,6 @@ import { DataTable, TableColumn, useTableState } from "../../common/DataTable";
 import { Clip } from "../../../types";
 import { Copy, Download, Lock, SquarePen, Tag, Trash2, Unlock } from "lucide-react";
 import downloadService, { DownloadStatus } from "../../../services/downloadService";
-import dunkIcon from "../../../assets/dunk.jpeg";
-import threePointerIcon from "../../../assets/3-pointer.jpeg";
-import twoPointerIcon from "../../../assets/2-pointer.jpeg";
-
-const CLIP_TYPE_ICONS: Record<string, string> = {
-    dunk: dunkIcon,
-    threepointer: threePointerIcon,
-    twopointer: twoPointerIcon,
-};
-
-function getClipIcon(name: string): string | undefined {
-    const lower = name.toLowerCase().replace(/[-_ ]/g, "");
-    for (const [key, icon] of Object.entries(CLIP_TYPE_ICONS)) {
-        if (lower.includes(key)) return icon;
-    }
-    return undefined;
-}
 
 interface ClipsListProps {
     title?: string;
@@ -233,12 +216,10 @@ const ClipsList: React.FC<ClipsListProps> = ({
     // Event name renderer with link
     const renderClipName = (clip: Clip) => {
         const isProcessing = clip.status === "processing";
-        const icon = getClipIcon(clip.name);
-        
+
         if (isProcessing) {
             return (
                 <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#5f6b7a", textTransform: "capitalize" }}>
-                    {icon && <img src={icon} alt="" style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover" }} />}
                     {clip.name}
                 </span>
             );
@@ -255,7 +236,6 @@ const ClipsList: React.FC<ClipsListProps> = ({
                         }}
                     >
                         <span style={{ display: "flex", alignItems: "center", gap: 6, textTransform: "capitalize"}}>
-                            {icon && <img src={icon} alt="" style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover" }} />}
                             {clip.name} 
                             {clip.originalAssetId && <SquarePen style={{ fill: "#006ce0", color: "white"}} size={20}/>}
                             {clip.orientation && (

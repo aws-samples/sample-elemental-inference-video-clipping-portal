@@ -11,6 +11,7 @@ import {
   SpaceBetween,
   Spinner,
   StatusIndicator,
+  Toggle,
 } from "@cloudscape-design/components";
 import ApiService from "../../../services/apiService";
 import { STANDARD_ENCODER_SETTINGS } from "../../../config/encoderSettings";
@@ -26,6 +27,19 @@ const INPUT_TYPE_OPTIONS = [
   { label: "MP4 File", value: "MP4_FILE" },
 ];
 
+// Elemental Inference Smart Subtitles supported languages.
+const SUBTITLE_LANGUAGE_OPTIONS = [
+  { label: "English (US)", value: "eng-us" },
+  { label: "English (UK)", value: "eng-gb" },
+  { label: "English (Australia)", value: "eng-au" },
+  { label: "English", value: "eng" },
+  { label: "French", value: "fra" },
+  { label: "German", value: "deu" },
+  { label: "Italian", value: "ita" },
+  { label: "Spanish", value: "spa" },
+  { label: "Portuguese", value: "por" },
+];
+
 const NAME_PATTERN = /^[a-zA-Z0-9\-_]+$/;
 
 const INITIAL_FORM_STATE: ChannelFormState = {
@@ -33,6 +47,8 @@ const INITIAL_FORM_STATE: ChannelFormState = {
   inputType: { label: "MP4 File", value: "MP4_FILE" },
   inputUrl: "",
   inputName: "",
+  subtitlesEnabled: false,
+  subtitleLanguage: { label: "English (US)", value: "eng-us" },
 };
 
 const POLL_INTERVAL_MS = 4000;
@@ -174,6 +190,9 @@ const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
         inputUrl: formData.inputUrl,
         inputName: formData.inputName,
         encoderSettings: STANDARD_ENCODER_SETTINGS,
+        subtitles: formData.subtitlesEnabled
+          ? { enabled: true, language: formData.subtitleLanguage.value }
+          : { enabled: false },
       });
 
       if (response?.executionArn) {
@@ -317,6 +336,40 @@ const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               disabled={isInProgress}
             />
           </FormField>
+
+          <FormField
+            label="Smart Subtitles"
+            description="Generate live subtitles from the audio using AWS Elemental Inference. Subtitles are added as a caption track on the channel output."
+          >
+            <Toggle
+              checked={formData.subtitlesEnabled}
+              onChange={({ detail }) =>
+                setFormData((prev) => ({ ...prev, subtitlesEnabled: detail.checked }))
+              }
+              disabled={isInProgress}
+            >
+              Enable Smart Subtitles
+            </Toggle>
+          </FormField>
+
+          {formData.subtitlesEnabled && (
+            <FormField
+              label="Subtitle Language"
+              description="The spoken language of the source audio. Elemental Inference uses this to optimize transcription accuracy."
+            >
+              <Select
+                selectedOption={formData.subtitleLanguage}
+                onChange={({ detail }) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    subtitleLanguage: detail.selectedOption as ChannelFormState["subtitleLanguage"],
+                  }))
+                }
+                options={SUBTITLE_LANGUAGE_OPTIONS}
+                disabled={isInProgress}
+              />
+            </FormField>
+          )}
         </SpaceBetween>
       </Form>
     </Modal>

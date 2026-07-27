@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Badge, SegmentedControl, SpaceBetween } from '@cloudscape-design/components';
 import SimpleHlsPlayer from '../SimpleHlsPlayer';
-import type { SimpleHlsPlayerRef } from '../SimpleHlsPlayer';
+import type { SimpleHlsPlayerRef, SubtitleTrackInfo } from '../SimpleHlsPlayer';
 import { useSyncPlayback } from './useSyncPlayback';
 import UnifiedControls from './UnifiedControls';
 import MuteToggle from './MuteToggle';
@@ -34,6 +34,10 @@ const DualPlayerPreview: React.FC<DualPlayerPreviewProps> = ({
     const [portraitError, setPortraitError] = useState(false);
     const [landscapeLive, setLandscapeLive] = useState<boolean | null>(null);
     const [portraitLive, setPortraitLive] = useState<boolean | null>(null);
+    const [captionsAvailable, setCaptionsAvailable] = useState(false);
+    const [captionsOn, setCaptionsOn] = useState(false);
+    const captionsOnRef = useRef(false);
+    captionsOnRef.current = captionsOn;
 
     const hasBothUrls = Boolean(landscapeUrl) && Boolean(portraitUrl);
     const showPortrait = hasBothUrls && effectiveViewMode === 'dual' && !portraitError;
@@ -74,6 +78,27 @@ const DualPlayerPreview: React.FC<DualPlayerPreviewProps> = ({
             portraitRef.current?.unmute();
         }
     }, [mutedState.portrait]);
+
+    const handleSubtitleTracksUpdated = useCallback((tracks: SubtitleTrackInfo[]) => {
+        if (tracks.length === 0) return;
+        setCaptionsAvailable(true);
+        // If captions are already toggled on (e.g. a pane just (re)mounted after a
+        // view-mode switch), apply the current selection so both panes stay in sync.
+        if (captionsOnRef.current) {
+            landscapeRef.current?.setSubtitleTrack(0);
+            portraitRef.current?.setSubtitleTrack(0);
+        }
+    }, []);
+
+    const handleToggleCaptions = useCallback(() => {
+        setCaptionsOn(prev => {
+            const next = !prev;
+            const trackId = next ? 0 : -1;
+            landscapeRef.current?.setSubtitleTrack(trackId);
+            portraitRef.current?.setSubtitleTrack(trackId);
+            return next;
+        });
+    }, []);
 
     const handleLandscapeError = useCallback(() => {
         setLandscapeError(true);
@@ -144,6 +169,7 @@ const DualPlayerPreview: React.FC<DualPlayerPreviewProps> = ({
                                         muted={mutedState.landscape}
                                         onError={handleLandscapeError}
                                         onStreamTypeDetected={setLandscapeLive}
+                                        onSubtitleTracksUpdated={handleSubtitleTracksUpdated}
                                     />
                                 </div>
                             )}
@@ -164,6 +190,9 @@ const DualPlayerPreview: React.FC<DualPlayerPreviewProps> = ({
                                     onPlay={play}
                                     onPause={pause}
                                     onSeek={seek}
+                                    captionsAvailable={captionsAvailable}
+                                    captionsOn={captionsOn}
+                                    onToggleCaptions={handleToggleCaptions}
                                 />
                             </div>
                         )}
@@ -193,6 +222,7 @@ const DualPlayerPreview: React.FC<DualPlayerPreviewProps> = ({
                                         muted={mutedState.portrait}
                                         onError={handlePortraitError}
                                         onStreamTypeDetected={setPortraitLive}
+                                        onSubtitleTracksUpdated={handleSubtitleTracksUpdated}
                                     />
                                 </div>
                             )}

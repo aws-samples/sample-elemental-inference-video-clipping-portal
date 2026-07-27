@@ -88,6 +88,118 @@ class TestHandleCreate:
         mock_inference_client.create_feed.assert_called_once()
 
 
+class TestSubtitlingOutput:
+    def _outputs_from_call(self, mock_inference_client):
+        call_kwargs = mock_inference_client.create_feed.call_args
+        return call_kwargs.kwargs.get("outputs") or call_kwargs[1].get("outputs")
+
+    def test_no_subtitles_creates_only_clipping_output(self, mock_inference_client, lambda_context):
+        """Backward compatibility: without subtitles, only the clipping output is created."""
+        mock_inference_client.create_feed.return_value = {"id": "f1", "arn": "arn:f1"}
+
+        from main import lambda_handler
+
+        result = lambda_handler({"channelName": "ch1"}, lambda_context)
+
+        outputs = self._outputs_from_call(mock_inference_client)
+        assert len(outputs) == 1
+        assert outputs[0]["name"] == "clipping-output"
+        assert result["subtitlingOutputName"] is None
+
+    def test_subtitles_enabled_adds_enabled_subtitling_output(self, mock_inference_client, lambda_context):
+        mock_inference_client.create_feed.return_value = {"id": "f1", "arn": "arn:f1"}
+
+        from main import lambda_handler
+
+        result = lambda_handler(
+            {
+                "channelName": "ch1",
+                "subtitles": {"enabled": True, "language": "eng-us"},
+            },
+            lambda_context,
+        )
+
+        outputs = self._outputs_from_call(mock_inference_client)
+        assert len(outputs) == 2
+        sub = next(o for o in outputs if o["name"] == "subtitling-output")
+        assert sub["status"] == "ENABLED"
+        assert sub["outputConfig"]["subtitling"]["language"] == "eng-us"
+        assert result["subtitlingOutputName"] == "subtitling-output"
+
+    def test_subtitles_passes_optional_fields(self, mock_inference_client, lambda_context):
+        mock_inference_client.create_feed.return_value = {"id": "f1", "arn": "arn:f1"}
+
+        from main import lambda_handler
+
+        lambda_handler(
+            {
+                "channelName": "ch1",
+                "subtitles": {
+                    "enabled": True,
+                    "language": "fra",
+                    "aspectRatio": {"width": 16, "height": 9},
+                    "dictionary": "dict123",
+                    "profanityFilter": "CENSOR",
+                },
+            },
+            lambda_context,
+        )
+
+        outputs = self._outputs_from_call(mock_inference_client)
+        cfg = next(o for o in outputs if o["name"] == "subtitling-output")["outputConfig"]["subtitling"]
+        assert cfg["language"] == "fra"
+        assert cfg["aspectRatio"] == {"width": 16, "height": 9}
+        assert cfg["dictionary"] == "dict123"
+        assert cfg["profanityFilter"] == "CENSOR"
+
+    def test_subtitles_enabled_false_is_ignored(self, mock_inference_client, lambda_context):
+        mock_inference_client.create_feed.return_value = {"id": "f1", "arn": "arn:f1"}
+
+        from main import lambda_handler
+
+        result = lambda_handler(
+            {"channelName": "ch1", "subtitles": {"enabled": False, "language": "eng-us"}},
+            lambda_context,
+        )
+
+        outputs = self._outputs_from_call(mock_inference_client)
+        assert len(outputs) == 1
+        assert result["subtitlingOutputName"] is None
+
+    def test_invalid_language_raises(self, mock_inference_client, lambda_context):
+        from main import lambda_handler
+
+        with pytest.raises(ValueError, match="Invalid subtitle language"):
+            lambda_handler(
+                {"channelName": "ch1", "subtitles": {"enabled": True, "language": "klingon"}},
+                lambda_context,
+            )
+
+    def test_invalid_profanity_filter_raises(self, mock_inference_client, lambda_context):
+        from main import lambda_handler
+
+        with pytest.raises(ValueError, match="Invalid profanityFilter"):
+            lambda_handler(
+                {
+                    "channelName": "ch1",
+                    "subtitles": {"enabled": True, "language": "eng", "profanityFilter": "BLEEP"},
+                },
+                lambda_context,
+            )
+
+    def test_invalid_aspect_ratio_raises(self, mock_inference_client, lambda_context):
+        from main import lambda_handler
+
+        with pytest.raises(ValueError, match="aspectRatio"):
+            lambda_handler(
+                {
+                    "channelName": "ch1",
+                    "subtitles": {"enabled": True, "language": "eng", "aspectRatio": {"width": "wide"}},
+                },
+                lambda_context,
+            )
+
+
 class TestHandleDelete:
     def test_delete_feed_calls_delete_with_feed_id(self, mock_inference_client, lambda_context):
         mock_inference_client.delete_feed.return_value = {}
