@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+
+Smart Subtitles release. Adds AWS Elemental Inference Smart Subtitles support end to end, plus documentation and security hardening. Highlights (see the 1.0.19–1.0.29 entries below for detail):
+
+- **Smart Subtitles**: opt-in per-channel subtitles at creation time (enable toggle + language picker) that flow through the channels API and CreateChannel state machine to both the Inference feed and the MediaLive channel; MediaLive emits a TTML caption track into the MediaPackage V2 output, and the dual/single channel preview player renders it via a CC toggle (shown only when a subtitle track is present)
+- **Documentation**: new README "Architecture Notes" section documenting the deliberate combined landscape/portrait output-group choice versus the recommended production approach, plus corrections and an updated diagram in "How It Works"
+- **Security & maintenance**: applied non-breaking `npm audit` fixes across `web-app`, `deploy`, and `api` (lockfile-only); removed the inconsistent per-event icons from the Key Moments list
+
 ## 1.0.29
 
 - Removed the per-event icons from the Key Moments (clips) list, which rendered inconsistently — the name-based icon lookup only matched spelled-out labels, so moments like "3-Pointer" showed no icon. The list now shows just the event name
