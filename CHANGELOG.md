@@ -1,5 +1,81 @@
 # Changelog
 
+## 1.1.0
+
+Smart Subtitles release. Adds AWS Elemental Inference Smart Subtitles support end to end, plus documentation and security hardening. Highlights (see the 1.0.19–1.0.29 entries below for detail):
+
+- **Smart Subtitles**: opt-in per-channel subtitles at creation time (enable toggle + language picker) that flow through the channels API and CreateChannel state machine to both the Inference feed and the MediaLive channel; MediaLive emits a TTML caption track into the MediaPackage V2 output, and the dual/single channel preview player renders it via a CC toggle (shown only when a subtitle track is present)
+- **Documentation**: new README "Architecture Notes" section documenting the deliberate combined landscape/portrait output-group choice versus the recommended production approach, plus corrections and an updated diagram in "How It Works"
+- **Security & maintenance**: applied non-breaking `npm audit` fixes across `web-app`, `deploy`, and `api` (lockfile-only); removed the inconsistent per-event icons from the Key Moments list
+
+## 1.0.29
+
+- Removed the per-event icons from the Key Moments (clips) list, which rendered inconsistently — the name-based icon lookup only matched spelled-out labels, so moments like "3-Pointer" showed no icon. The list now shows just the event name
+- Deleted the `ClipsList` icon logic (`CLIP_TYPE_ICONS` / `getClipIcon`) and the now-unused `dunk.jpeg`, `3-pointer.jpeg`, and `2-pointer.jpeg` assets
+
+## 1.0.28
+
+- Applied non-breaking `npm audit fix` across `web-app`, `deploy`, and `api` (lockfile-only; no `package.json` changes): cleared all fixable high/low advisories, bringing `api` to 0 vulnerabilities and `deploy` to a single upstream-bundled `aws-cdk-lib` transitive
+- Left `@byomakase/omakase-player` pinned at `0.20.0` (its axios high is the documented accepted risk in `DEPENDENCY_PINS.md`; the only "fix" is a breaking major upgrade that regresses the clip editor)
+- Verified `api`/`deploy`/`web-app` builds and the 51 web-app tests still pass after the updates
+
+## 1.0.27
+
+- Reviewed and corrected the README "How It Works" steps: fixed typos and grammar in the smart subtitles steps, removed a redundant/inaccurate TTML reference, and restored the missing step describing MediaLive sending the landscape and portrait video encodes to MediaPackage
+
+## 1.0.26
+
+- Documented the deliberate architecture choice of grouping the landscape and smart-cropped portrait encodes into a single MediaPackage output group: added an "Architecture Notes" section to the README explaining the trade-off versus the recommended production approach of separating orientations into different MediaLive output groups
+
+## 1.0.25
+
+- Smart Subtitles (web playback): the dual/single channel preview player can now render the TTML caption track carried in the MediaPackage V2 manifest. A CC toggle appears in the player controls only when a subtitle track is detected, and captions default to off until the user opts in
+- `SimpleHlsPlayer` exposes subtitle-track discovery (`onSubtitleTracksUpdated`) and imperative `getSubtitleTracks` / `setSubtitleTrack` methods, backed by hls.js IMSC1 rendering (with a native TextTrack fallback for Safari)
+- `DualPlayerPreview` keeps caption state in sync across the landscape and portrait panes, re-applying the selection when a pane remounts after a view-mode switch
+
+## 1.0.24
+
+- Refined the Smart Subtitles caption description to match validated MediaLive settings: `TtmlDestinationSettings.StyleControl` set to `USE_CONFIGURED` and added `Accessibility: DOES_NOT_IMPLEMENT_ACCESSIBILITY_FEATURES`
+- Backend Smart Subtitles path now confirmed working end-to-end against live MediaLive/MediaPackage V2 (channel creates, TTML caption track ingests, manifest carries subtitles)
+
+## 1.0.23
+
+- Fixed MediaPackage V2 rejecting the caption segment ingest with HTTP 400: switched the Smart Subtitles caption description from WebVTT to TTML (`TtmlDestinationSettings` with `StyleControl: PASSTHROUGH`) — MediaPackage V2 / CMAF Ingest output groups require TTML; WebVTT is only valid for HLS / MediaPackage V1
+- Updated `smart_subtitles.py`, its tests, and the Create Channel form wording accordingly
+
+## 1.0.22
+
+- Fixed Smart Subtitles channel creation failing with "Invalid enum value 'DELAY_VIDEO'": corrected `CaptionSynchronizationMode` to the actual MediaLive enum values `VIDEO_ALIGNED_CAPTIONS` (default) and `NO_VIDEO_DELAY` in `smart_subtitles.py` and the `channels-python` validator; updated tests. Live channel creation confirmed the rest of the caption wiring (selector, WebVTT description, caption output) is structurally correct
+
+## 1.0.21
+
+- Smart Subtitles (web form): the Create Channel modal now has an "Enable Smart Subtitles" toggle and a language picker (9 supported languages), shown only when enabled; the selection flows into the `subtitles` object the channels API accepts
+- Extended `ChannelFormState` with `subtitlesEnabled` / `subtitleLanguage` and `apiService.createChannel` with an optional `subtitles` param
+
+## 1.0.20
+
+- Smart Subtitles (backend, part 2 — channel wiring): channel creation now accepts an optional `subtitles` config that flows through the channels API → CreateChannel state machine → both the inference feed and the MediaLive channel
+- Added `api/src/medialive-api-client/smart_subtitles.py`, an idempotent merge transform that injects the caption selector (referencing the feed's subtitling output), a WebVTT caption description, and a caption output into the MediaPackage output group; 15 unit tests
+- `channels-python` validates/normalizes the `subtitles` request field and defaults to disabled so the state machine can always reference `$.subtitles`
+
+## 1.0.19
+
+- Smart Subtitles (backend, part 1): `create-feed-lambda` now accepts an optional `subtitles` config and adds an ENABLED Elemental Inference `subtitling-output` (language, aspect ratio, dictionary, profanity filter) alongside the clipping output; preserved across the clipping enable/disable lifecycle
+- Pinned `boto3>=1.43.0` in the `create-feed-lambda` and `medialive-api-client` requirements — the verified minimum SDK version that includes the Elemental Inference `SubtitlingConfig` and MediaLive `SmartSubtitleSourceSettings` models (1.42.97 lacks both)
+- Added 7 unit tests covering the subtitling output (enable/disable, validation of language/profanity/aspect ratio, backward compatibility)
+
+## 1.0.18
+
+- Standardized all application Node.js Lambdas on ARM64 (Graviton): added `architecture: ARM_64` to JobsApi, Events, Clips, Templates, and SystemSettings functions, and flipped MedialiveStatus from X86_64 to ARM64 — previously 6 of 7 Node functions ran on x86
+- Upgraded the two inline Python Lambdas in `amplify-config-lambda-construct.ts` (AuthorizerLambda, AmplifyConfigLambda) from the deprecated Python 3.8 runtime to Python 3.12 and moved them to ARM64
+- Verified with `cdk synth --all`: every application Lambda now runs on ARM64 with a current runtime (0 x86_64, 0 python3.8 in the synthesized templates); remaining nodejs22.x/python3.13 entries are CDK-managed custom-resource handlers
+
+## 1.0.17
+
+- Migrated all 13 Python Lambdas off the experimental `@aws-cdk/aws-lambda-python-alpha` package onto a small `createPythonFunction` helper built on stable `aws-cdk-lib` APIs (`lambda.Function` + `Code.fromAsset` bundling); removed the alpha dependency from `deploy/package.json`
+- Standardized the MediaLive API client Lambda onto ARM64 — it was the only Python function defaulting to X86_64, so all Python Lambdas now run on Graviton
+- Pinned the bundling image platform to the target architecture so any future native-wheel dependency resolves correctly
+
 ## 1.0.16
 
 - Removed the "Publish Clips" button from the clips list — it only flipped a `status: "published"` field that nothing else in the app reacted to (no S3 push, no public URL, no downstream notification), and the matching status filter that surfaced it was already removed in v1.0.10

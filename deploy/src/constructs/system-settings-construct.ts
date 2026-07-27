@@ -16,6 +16,7 @@ export class SystemSettingsConstruct extends Construct {
 
         this.systemSettingsFunction = new cdk.aws_lambda_nodejs.NodejsFunction(this, "SystemSettingsFunction", {
             runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "handler",
             entry: "../api/src/system-settings/index.ts",
             depsLockFilePath: "../api/package-lock.json",

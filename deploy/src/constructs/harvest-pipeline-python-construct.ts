@@ -15,7 +15,7 @@
 
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import { createPythonFunction } from "./python-function";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as sqs from "aws-cdk-lib/aws-sqs";
@@ -39,8 +39,8 @@ export interface HarvestPipelinePythonConstructProps {
 }
 
 export class HarvestPipelinePythonConstruct extends Construct {
-    public readonly harvestProcessorFunction: lambdaPython.PythonFunction;
-    public readonly harvestApiFunction: lambdaPython.PythonFunction;
+    public readonly harvestProcessorFunction: lambda.Function;
+    public readonly harvestApiFunction: lambda.Function;
     public readonly pythonLayer: lambda.LayerVersion;
     public readonly deadLetterQueue: sqs.Queue;
     public readonly alertingTopic: sns.Topic;
@@ -84,10 +84,8 @@ export class HarvestPipelinePythonConstruct extends Construct {
         });
 
         // Create EventBridge Harvest Processor Lambda Function
-        this.harvestProcessorFunction = new lambdaPython.PythonFunction(this, "HarvestProcessorFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.harvestProcessorFunction = createPythonFunction(this, "HarvestProcessorFn", {
+            handler: "main.lambda_handler",
             entry: "../api/src/harvest-pipeline-python",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.minutes(5),
@@ -135,10 +133,8 @@ export class HarvestPipelinePythonConstruct extends Construct {
         });
 
         // Create Harvest API Lambda Function for REST endpoints
-        this.harvestApiFunction = new lambdaPython.PythonFunction(this, "HarvestApiFn", {
-            runtime: lambda.Runtime.PYTHON_3_12,
-            handler: "api_handler",
-            index: "main.py",
+        this.harvestApiFunction = createPythonFunction(this, "HarvestApiFn", {
+            handler: "main.api_handler",
             entry: "../api/src/harvest-pipeline-python",
             architecture: lambda.Architecture.ARM_64,
             timeout: cdk.Duration.seconds(30),

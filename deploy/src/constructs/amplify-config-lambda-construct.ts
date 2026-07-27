@@ -57,7 +57,8 @@ export class AmplifyConfigLambdaConstruct extends Construct {
         const stack = cdk.Stack.of(this);
 
         const authorizerFn = new cdk.aws_lambda.Function(this, "AuthorizerLambda", {
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_8,
+            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "index.lambda_handler",
             code: cdk.aws_lambda.Code.fromInline(this.getAuthorizerLambdaCode()), // TODO: support both python and typescript versions
             timeout: cdk.Duration.seconds(15),
@@ -75,7 +76,8 @@ export class AmplifyConfigLambdaConstruct extends Construct {
         );
 
         const lambdaFn = new cdk.aws_lambda.Function(this, "AmplifyConfigLambda", {
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_8,
+            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
+            architecture: cdk.aws_lambda.Architecture.ARM_64,
             handler: "index.lambda_handler",
             code: cdk.aws_lambda.Code.fromInline(this.getPythonLambdaFunction()), // TODO: support both python and typescript versions
             timeout: cdk.Duration.seconds(15),

@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { createPythonFunction } from "./python-function";
 import { Construct } from "constructs";
 
 export interface DownloadMp4LambdaConstructProps {
@@ -10,18 +11,16 @@ export interface DownloadMp4LambdaConstructProps {
 }
 
 export class DownloadMp4LambdaConstruct extends Construct {
-    public readonly downloadApiFunction: lambdaPython.PythonFunction;
+    public readonly downloadApiFunction: lambda.Function;
 
     constructor(scope: Construct, id: string, props: DownloadMp4LambdaConstructProps) {
         super(scope, id);
 
         const stack = cdk.Stack.of(this);
 
-        this.downloadApiFunction = new lambdaPython.PythonFunction(this, "DownloadApiFunction", {
-            runtime: cdk.aws_lambda.Runtime.PYTHON_3_12,
-            architecture: cdk.aws_lambda.Architecture.ARM_64,
-            handler: "lambda_handler",
-            index: "main.py",
+        this.downloadApiFunction = createPythonFunction(this, "DownloadApiFunction", {
+            architecture: lambda.Architecture.ARM_64,
+            handler: "main.lambda_handler",
             entry: "../api/src/download-api",
             timeout: cdk.Duration.seconds(30),
             memorySize: 512,

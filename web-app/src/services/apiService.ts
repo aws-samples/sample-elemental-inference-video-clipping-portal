@@ -167,6 +167,11 @@ export class ApiService {
         inputUrl: string;
         inputName: string;
         encoderSettings: any;
+        subtitles?: {
+            enabled: boolean;
+            language?: string;
+            captionSynchronizationMode?: string;
+        };
     }): Promise<{ executionArn: string; status: string }> {
         return this.makeRequest<{ executionArn: string; status: string }>('/channels', {
             method: 'POST',

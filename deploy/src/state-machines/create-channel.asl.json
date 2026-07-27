@@ -102,7 +102,8 @@
       "Parameters": {
         "FunctionName": "${CreateFeedFunctionArn}",
         "Payload": {
-          "channelName.$": "$.channelName"
+          "channelName.$": "$.channelName",
+          "subtitles.$": "$.subtitles"
         }
       },
       "ResultSelector": {
@@ -181,7 +182,8 @@
             "LogLevel": "INFO",
             "InferenceSettings": {
               "FeedArn.$": "$.feed.feedArn"
-            }
+            },
+            "subtitles.$": "$.subtitles"
           }
         }
       },

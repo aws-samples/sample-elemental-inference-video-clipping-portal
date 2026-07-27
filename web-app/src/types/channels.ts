@@ -60,6 +60,14 @@ export interface ChannelWithStatus extends ChannelRecord {
 export type InputType = 'MP4_FILE' | 'RTMP_PUSH' | 'RTMP_PULL' | 'RTP_PUSH' | 'UDP_PUSH';
 
 /**
+ * Languages supported by Elemental Inference Smart Subtitles.
+ * ISO 639-2/T, optionally with a region subtag.
+ */
+export type SubtitleLanguage =
+  | 'eng' | 'eng-au' | 'eng-gb' | 'eng-us'
+  | 'fra' | 'ita' | 'deu' | 'spa' | 'por';
+
+/**
  * Form state for Create Channel Modal
  * Validates Requirements: 2.1-2.6
  */
@@ -71,6 +79,11 @@ export interface ChannelFormState {
   };
   inputUrl: string;              // Required - S3 URL for input source (Requirement 2.3)
   inputName: string;             // Required - Name for the MediaLive input (Requirement 2.4)
+  subtitlesEnabled: boolean;     // Optional - enable Smart Subtitles for this channel
+  subtitleLanguage: {            // Language for Smart Subtitles (used when enabled)
+    label: string;
+    value: SubtitleLanguage;
+  };
 }
 
 /**

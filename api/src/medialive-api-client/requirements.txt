@@ -1,5 +1,9 @@
 # AWS SDK
-boto3>=1.34.0
+# NOTE: boto3 is bundled into the Lambda package (see the deploy createPythonFunction
+# helper), so this floor controls the deployed SDK version, not the runtime-provided
+# one. 1.43.0 is the minimum that includes the MediaLive SmartSubtitleSourceSettings /
+# CaptionSelectorSettings models required for Elemental Inference Smart Subtitles.
+boto3>=1.43.0
 
 # AWS Lambda Powertools and dependencies
 aws-lambda-powertools>=2.30.0

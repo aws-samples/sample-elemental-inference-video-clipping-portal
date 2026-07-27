@@ -25,6 +25,15 @@ logger = Logger(service="create-feed-lambda")
 tracer = Tracer(service="create-feed-lambda")
 metrics = Metrics(namespace="CreateFeedLambda", service="create-feed-lambda")
 
+# Smart Subtitles configuration constants.
+# The subtitling output is named consistently so the MediaLive caption selector
+# (InferenceFeedOutput) can reference it, and so build_updated_outputs preserves it
+# across clipping enable/disable.
+SUBTITLING_OUTPUT_NAME = "subtitling-output"
+# Languages supported by Elemental Inference Smart Subtitles (ISO 639-2/T, optional region subtag).
+VALID_SUBTITLE_LANGUAGES = {"eng", "eng-au", "eng-gb", "eng-us", "fra", "ita", "deu", "spa", "por"}
+VALID_PROFANITY_MODES = {"DISABLED", "CENSOR", "DROP"}
+
 # Environment variables
 INFERENCE_STAGE = os.environ.get("INFERENCE_STAGE", "prod")
 AWS_REGION = os.environ.get("AWS_REGION", "us-west-2")
@@ -86,28 +95,101 @@ def handle_create(event: Dict[str, Any]) -> Dict[str, Any]:
     feed_name = f"{channel_name}-feed"
     logger.info("Creating inference feed", extra={"feed_name": feed_name, "channel_name": channel_name})
 
-    response = inference_client.create_feed(
-        name=feed_name,
-        outputs=[
-            {
-                "name": "clipping-output",
-                "outputConfig": {
-                    "clipping": {
-                        "callbackMetadata": channel_name,
-                    }
-                },
-                "status": "DISABLED",
-            }
-        ],
-    )
+    outputs = [
+        {
+            "name": "clipping-output",
+            "outputConfig": {
+                "clipping": {
+                    "callbackMetadata": channel_name,
+                }
+            },
+            "status": "DISABLED",
+        }
+    ]
+
+    # Optionally add a Smart Subtitles output. Unlike clipping (which is gated to
+    # event activation), the subtitling output is created ENABLED so subtitles are
+    # generated whenever the channel is streaming. build_updated_outputs preserves it
+    # through the clipping enable/disable lifecycle.
+    subtitles = event.get("subtitles")
+    subtitles_enabled = bool(subtitles and subtitles.get("enabled"))
+    if subtitles_enabled:
+        outputs.append(build_subtitling_output(subtitles))
+        logger.info("Subtitling output added to feed", extra={
+            "channel_name": channel_name,
+            "language": subtitles.get("language"),
+        })
+
+    response = inference_client.create_feed(name=feed_name, outputs=outputs)
 
     feed_id = response["id"]
     feed_arn = response["arn"]
 
     logger.info("Feed created", extra={"feed_id": feed_id, "feed_arn": feed_arn})
     metrics.add_metric(name="FeedCreated", unit=MetricUnit.Count, value=1)
+    if subtitles_enabled:
+        metrics.add_metric(name="FeedCreatedWithSubtitles", unit=MetricUnit.Count, value=1)
 
-    return {"feedId": feed_id, "feedArn": feed_arn}
+    return {
+        "feedId": feed_id,
+        "feedArn": feed_arn,
+        "subtitlingOutputName": SUBTITLING_OUTPUT_NAME if subtitles_enabled else None,
+    }
+
+
+@tracer.capture_method
+def build_subtitling_output(subtitles: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Build an Elemental Inference subtitling feed output from a subtitle config dict.
+
+    Expected shape:
+        {
+            "enabled": true,
+            "language": "eng-us",              # required, must be a supported language
+            "aspectRatio": {"width": 16, "height": 9},   # optional
+            "dictionary": "abc123",            # optional custom dictionary id
+            "profanityFilter": "DISABLED"      # optional: DISABLED | CENSOR | DROP
+        }
+    """
+    language = subtitles.get("language")
+    if language not in VALID_SUBTITLE_LANGUAGES:
+        raise ValueError(
+            f"Invalid subtitle language: {language!r}. "
+            f"Must be one of {sorted(VALID_SUBTITLE_LANGUAGES)}"
+        )
+
+    subtitling_config: Dict[str, Any] = {"language": language}
+
+    aspect = subtitles.get("aspectRatio")
+    if aspect:
+        try:
+            subtitling_config["aspectRatio"] = {
+                "width": int(aspect["width"]),
+                "height": int(aspect["height"]),
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                "subtitles.aspectRatio must contain integer 'width' and 'height'"
+            ) from exc
+
+    dictionary = subtitles.get("dictionary")
+    if dictionary:
+        subtitling_config["dictionary"] = dictionary
+
+    profanity_filter = subtitles.get("profanityFilter")
+    if profanity_filter:
+        if profanity_filter not in VALID_PROFANITY_MODES:
+            raise ValueError(
+                f"Invalid profanityFilter: {profanity_filter!r}. "
+                f"Must be one of {sorted(VALID_PROFANITY_MODES)}"
+            )
+        subtitling_config["profanityFilter"] = profanity_filter
+
+    return {
+        "name": SUBTITLING_OUTPUT_NAME,
+        "outputConfig": {"subtitling": subtitling_config},
+        "status": "ENABLED",
+    }
 
 
 @tracer.capture_method

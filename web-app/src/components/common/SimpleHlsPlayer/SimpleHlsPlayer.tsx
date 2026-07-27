@@ -1,6 +1,12 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import Hls from 'hls.js';
 
+export interface SubtitleTrackInfo {
+    id: number;
+    name: string;
+    lang?: string;
+}
+
 export interface SimpleHlsPlayerRef {
     play(): void;
     pause(): void;
@@ -10,6 +16,10 @@ export interface SimpleHlsPlayerRef {
     getCurrentTime(): number;
     getDuration(): number;
     getVideoElement(): HTMLVideoElement | null;
+    /** Currently known subtitle tracks (empty when none). */
+    getSubtitleTracks(): SubtitleTrackInfo[];
+    /** Select a subtitle track by id and render it, or pass -1 to turn captions off. */
+    setSubtitleTrack(id: number): void;
 }
 
 interface SimpleHlsPlayerProps {
@@ -21,12 +31,15 @@ interface SimpleHlsPlayerProps {
     onTimeUpdate?: (time: number) => void;
     onLoadedMetadata?: () => void;
     onStreamTypeDetected?: (isLive: boolean) => void;
+    /** Fired when the set of available subtitle tracks changes. */
+    onSubtitleTracksUpdated?: (tracks: SubtitleTrackInfo[]) => void;
 }
 
 const SimpleHlsPlayer = forwardRef<SimpleHlsPlayerRef, SimpleHlsPlayerProps>(
-    ({ src, autoplay = false, controls = true, muted, onError, onTimeUpdate, onLoadedMetadata, onStreamTypeDetected }, ref) => {
+    ({ src, autoplay = false, controls = true, muted, onError, onTimeUpdate, onLoadedMetadata, onStreamTypeDetected, onSubtitleTracksUpdated }, ref) => {
         const videoRef = useRef<HTMLVideoElement>(null);
         const hlsRef = useRef<Hls | null>(null);
+        const subtitleTracksRef = useRef<SubtitleTrackInfo[]>([]);
 
         useImperativeHandle(ref, () => ({
             play() {
@@ -59,6 +72,26 @@ const SimpleHlsPlayer = forwardRef<SimpleHlsPlayerRef, SimpleHlsPlayerProps>(
             getVideoElement() {
                 return videoRef.current;
             },
+            getSubtitleTracks() {
+                return subtitleTracksRef.current;
+            },
+            setSubtitleTrack(id: number) {
+                const hls = hlsRef.current;
+                if (hls) {
+                    // hls.js renders IMSC1 (TTML) / WebVTT cues natively into the
+                    // video element. -1 disables captions.
+                    hls.subtitleDisplay = id >= 0;
+                    hls.subtitleTrack = id;
+                    return;
+                }
+                // Native (Safari) fallback: toggle the matching TextTrack directly.
+                const textTracks = videoRef.current?.textTracks;
+                if (textTracks) {
+                    for (let i = 0; i < textTracks.length; i++) {
+                        textTracks[i].mode = i === id ? 'showing' : 'disabled';
+                    }
+                }
+            },
         }), []);
 
         const onErrorRef = useRef(onError);
@@ -72,6 +105,9 @@ const SimpleHlsPlayer = forwardRef<SimpleHlsPlayerRef, SimpleHlsPlayerProps>(
 
         const onStreamTypeDetectedRef = useRef(onStreamTypeDetected);
         onStreamTypeDetectedRef.current = onStreamTypeDetected;
+
+        const onSubtitleTracksUpdatedRef = useRef(onSubtitleTracksUpdated);
+        onSubtitleTracksUpdatedRef.current = onSubtitleTracksUpdated;
 
         // Wire video element event listeners
         useEffect(() => {
@@ -106,11 +142,16 @@ const SimpleHlsPlayer = forwardRef<SimpleHlsPlayerRef, SimpleHlsPlayerProps>(
             const video = videoRef.current;
             if (!video || !src) return;
 
+            // Reset any tracks discovered for a previous source.
+            subtitleTracksRef.current = [];
+
             if (Hls.isSupported()) {
                 const hls = new Hls({
                     enableWorker: true,
                     lowLatencyMode: false,
                 });
+                // Captions are opt-in via the CC toggle; don't auto-show a track.
+                hls.subtitleDisplay = false;
 
                 hls.on(Hls.Events.ERROR, (_event, data) => {
                     console.error('HLS Error:', data);
@@ -144,18 +185,56 @@ const SimpleHlsPlayer = forwardRef<SimpleHlsPlayerRef, SimpleHlsPlayerProps>(
                     onStreamTypeDetectedRef.current?.(data.details.live);
                 });
 
+                hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_event, data) => {
+                    const tracks: SubtitleTrackInfo[] = data.subtitleTracks.map(t => ({
+                        id: t.id,
+                        name: t.name || t.lang || `Track ${t.id + 1}`,
+                        lang: t.lang,
+                    }));
+                    subtitleTracksRef.current = tracks;
+                    // Keep captions off until the user opts in.
+                    hls.subtitleDisplay = false;
+                    hls.subtitleTrack = -1;
+                    onSubtitleTracksUpdatedRef.current?.(tracks);
+                });
+
                 hls.loadSource(src);
                 hls.attachMedia(video);
                 hlsRef.current = hls;
 
                 return () => {
                     hls.destroy();
+                    hlsRef.current = null;
+                    subtitleTracksRef.current = [];
                 };
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = src;
                 if (autoplay) {
                     video.play().catch(e => console.error('Autoplay failed:', e));
                 }
+
+                // Native HLS (Safari) exposes subtitle renditions as TextTracks.
+                const reportNativeTracks = () => {
+                    const textTracks = video.textTracks;
+                    const tracks: SubtitleTrackInfo[] = [];
+                    for (let i = 0; i < textTracks.length; i++) {
+                        const tt = textTracks[i];
+                        if (tt.kind === 'subtitles' || tt.kind === 'captions') {
+                            tt.mode = 'disabled';
+                            tracks.push({ id: i, name: tt.label || tt.language || `Track ${i + 1}`, lang: tt.language });
+                        }
+                    }
+                    subtitleTracksRef.current = tracks;
+                    if (tracks.length > 0) {
+                        onSubtitleTracksUpdatedRef.current?.(tracks);
+                    }
+                };
+                video.textTracks.addEventListener('addtrack', reportNativeTracks);
+
+                return () => {
+                    video.textTracks.removeEventListener('addtrack', reportNativeTracks);
+                    subtitleTracksRef.current = [];
+                };
             }
         }, [src, autoplay]);
 
