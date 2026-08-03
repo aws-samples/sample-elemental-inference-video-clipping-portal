@@ -42,3 +42,25 @@ in this context, but documented so it's not silently inherited.
 
 **Tracking:** open an issue at https://github.com/byomakase/omakase-player
 describing the regression with a sample CMAF manifest from MediaPackage V2.
+
+## `react-router` / `react-router-dom` — held at `7.x` (not upgraded to `8.x`)
+
+**Open Dependabot alert:** "React Router: RSC Mode CSRF Bypass Allows Action
+Execution Before 400 Response" (GHSA-qwww-vcr4-c8h2), high severity.
+
+**Why not fixed:** The advisory's vulnerable range is `>= 7.12.0, < 8.3.0` and the
+first patched version is `8.3.0` — a **major** upgrade from our `7.x`. There is no
+`7.x` patch. More importantly, the advisory explicitly notes it *"only affects your
+application if you are using the unstable RSC APIs."* This portal is a client-side
+Vite SPA using `react-router-dom` in classic/data-router mode and does **not** use
+the unstable React Server Components APIs, so the CSRF path is not reachable in our
+usage. The exposure is effectively nil.
+
+Upgrading to `react-router@8` solely to clear this non-applicable alert would be a
+breaking major change with no security benefit for our configuration, so we are
+leaving it open and documented.
+
+**To revisit when:**
+
+- We independently decide to move to React Router 8 for other reasons; or
+- A future advisory affects the classic (non-RSC) data-router APIs we actually use.

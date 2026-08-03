@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Security: cleared the `postcss` high-severity advisory (Path Traversal in source-map auto-loading) via a non-breaking `npm audit fix` in `web-app` (postcss 8.5.14 → 8.5.25, plus dev-tooling lockfile dedup); web-app high-severity audit count dropped from 16 to 9
+- Documented the open `react-router` Dependabot alert (RSC Mode CSRF, GHSA-qwww-vcr4-c8h2) in `web-app/DEPENDENCY_PINS.md` as non-applicable: it is fixed only in the major `8.3.0` release and affects only the unstable RSC APIs, which this client-side SPA does not use — left at 7.x by design
+- Verified: `tsc` clean, 51 web-app tests pass, `vite build` succeeds
+
 ## 1.1.0
 
 Smart Subtitles release. Adds AWS Elemental Inference Smart Subtitles support end to end, plus documentation and security hardening. Highlights (see the 1.0.19–1.0.29 entries below for detail):
